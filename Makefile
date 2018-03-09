@@ -2,7 +2,7 @@
 
 include config.mk
 
-SRC = breakout.c
+SRC = breakout.c util.c
 OBJ = ${SRC:.c=.o}
 
 all: options breakout
