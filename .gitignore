@@ -1,0 +1,7 @@
+# gtags
+GPATH
+GRTAGS
+GTAGS
+
+*.o
+breakout
