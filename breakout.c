@@ -94,7 +94,7 @@ void setup()
 	if (SDL_Init(SDL_INIT_VIDEO))
 		die("SDL_INIT: %s\n", SDL_GetError());
 
-	win = SDL_CreateWindow("Breakout",
+	win = SDL_CreateWindow(GAME_NAME,
 						   100, 100,
 						   GAME_WIDTH, GAME_HEIGHT,
 						   SDL_WINDOW_SHOWN);
@@ -130,7 +130,7 @@ void run()
 	int dt = 0;
 	
 	while (1) {
-		SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
+		SDL_SetRenderDrawColor(ren, BGCOLOR, SDL_ALPHA_OPAQUE);
 		SDL_RenderClear(ren);
 
 		if (tick(dt)) return;
