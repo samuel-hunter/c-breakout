@@ -39,6 +39,7 @@ typedef struct Paddle {
 static Brick *newbrick(const Layer*, int, int);
 static void drawbrick(Brick*);
 static void drawpaddle();
+static void movepaddle(int);
 static int tick(int);
 static void setup();
 static void run();
@@ -82,6 +83,13 @@ void drawpaddle()
 	SDL_RenderFillRect(ren, &rect);
 }
 
+void movepaddle(int dist)
+{
+	paddle->x += dist;
+	paddle->x = CLAMP(paddle->x, BORDER_SIZE,
+					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
+}
+
 /*
  * Return zero to continue game
  */
@@ -91,7 +99,7 @@ int tick(int dt_millis)
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT)
 				return 1;
-		if (event.type == SDL_KEYDOWN)
+		if (event.type == SDL_KEYDOWN && !event.key.repeat)
 			switch (event.key.keysym.scancode) {
 			case SDL_SCANCODE_ESCAPE:
 				return 1;
@@ -101,6 +109,12 @@ int tick(int dt_millis)
 				break;
 			}
 	}
+
+	const uint8_t *state = SDL_GetKeyboardState(NULL);
+	if (state[SDL_SCANCODE_A] || state[SDL_SCANCODE_LEFT])
+		movepaddle(-PADDLE_SPEED*dt_millis/1000);
+	if (state[SDL_SCANCODE_D] || state[SDL_SCANCODE_RIGHT])
+		movepaddle(PADDLE_SPEED*dt_millis/1000);
 
 	for (Brick *b = brickstack; b; b = b->next)
 		drawbrick(b);
@@ -152,7 +166,7 @@ void setup()
 	// Set up paddle
 	paddle = ecalloc(1, sizeof(Paddle));
 	paddle->x = (GAME_WIDTH - PADDLE_WIDTH) / 2;
-	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - 5;
+	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - BORDER_SIZE;
 }
 
 void run()
