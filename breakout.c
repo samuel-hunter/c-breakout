@@ -16,7 +16,7 @@ typedef struct Color {
 } Color;
 
 typedef struct Layer {
-	int speed;
+	double speed;
 	Color color;
 } Layer;
 
@@ -24,7 +24,6 @@ typedef struct Brick {
 	int x;
 	int y;
 	const Layer *layer;
-	int speed;
 	Color color;
 	struct Brick *next;
 } Brick;
@@ -38,6 +37,7 @@ typedef struct Ball {
 	double x;
 	double y;
 
+	double speed;
 	double xvel;
 	double yvel;
 } Ball;
@@ -47,9 +47,12 @@ typedef struct Ball {
 
 static Brick *newbrick(const Layer*, int, int);
 static void drawbrick(Brick*);
+static Brick *breakbrick(Brick*);
 static void drawpaddle();
 static void movepaddle(double);
 static void drawball();
+static void moveball();
+static void setballspeed(double);
 static int tick(double);
 static void setup();
 static void run();
@@ -85,6 +88,40 @@ void drawbrick(Brick *brick)
 	SDL_RenderFillRect(ren, &rect);
 }
 
+/*
+ * Returns the next brick
+ */
+Brick *breakbrick(Brick *brick)
+{
+	Brick *temp = NULL;
+	double speed = brick->layer->speed;
+	
+	if (brick == brickstack) {
+		brickstack = brickstack->next;
+		free(brick);
+
+		if (ball->speed < speed)
+			setballspeed(speed);
+		return brickstack;
+	}
+
+	// Select the previous brick
+	for (temp = brickstack; temp && temp->next != brick; temp = temp->next);
+	if (!temp) {
+		dbprintf(DEBUG_BRICK | DEBUG_WARN, "Brick %p not found\n", brick);
+		return NULL; // Do nothing if brick not found
+	}
+
+	dbprintf(DEBUG_BRICK, "Stitching brick %p to %p (removing %p)\n",
+			 temp, brick->next, brick);
+	temp->next = brick->next;
+	free(brick);
+
+	if (ball->speed < speed)
+		setballspeed(speed);
+	return temp->next;
+}
+
 void drawpaddle()
 {
 	SDL_SetRenderDrawColor(ren, TRUECOLOR(paddle_color),
@@ -100,10 +137,8 @@ void movepaddle(double dist)
 	paddle->x = CLAMP(paddle->x, BORDER_SIZE,
 					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
 
-	if (!ball->yvel) {
-		ball->xvel = BALL_SPEED_START * BALL_XFACT;
-		ball->yvel = -BALL_SPEED_START * BALL_YFACT;
-	}
+	if (!ball->speed)
+		setballspeed(BALL_SPEED_START);
 }
 
 void drawball()
@@ -113,53 +148,12 @@ void drawball()
 	SDL_Rect rect = { .x = ball->x - BALL_RADIUS, .y = ball->y - BALL_RADIUS,
 				 .w = BALL_RADIUS*2, .h = BALL_RADIUS*2 };
 	SDL_RenderFillRect(ren, &rect);
-
-	/*
-	double error = (double) -BALL_RADIUS;
-	double x = (double)BALL_RADIUS - 0.5;
-	double y = 0.5;
-	double cx = ball->x - 0.5;
-	double cy = ball->y - 0.5;
-
-	while (x >= y) {
-		SDL_RenderDrawPoint(ren, (int)(cx + x), (int)(cy + y));
-		SDL_RenderDrawPoint(ren, (int)(cx + y), (int)(cy + x));
-
-		if (x) {
-			SDL_RenderDrawPoint(ren, (int)(cx - x), (int)(cy + y));
-			SDL_RenderDrawPoint(ren, (int)(cx + y), (int)(cy - x));
-		}
-
-		if (y) {
-			SDL_RenderDrawPoint(ren, (int)(cx + x), (int)(cy - y));
-			SDL_RenderDrawPoint(ren, (int)(cx - y), (int)(cy + x));
-		}
-
-		if (x && y) {
-			SDL_RenderDrawPoint(ren, (int)(cx - x), (int)(cy - y));
-			SDL_RenderDrawPoint(ren, (int)(cx - y), (int)(cy - x));
-		}
-
-		error += y;
-		y++;
-		error += y;
-
-		if (error >= 0) {
-			x--;
-			error -= x * 2;
-		}
-	}
-	*/
 }
 
 void moveball(double dt)
 {
 	ball->x += ball->xvel * dt;
 	ball->y += ball->yvel * dt;
-
-	dbprintf(DEBUG_SPRITE, "X: %f\t%f\nY: %f\t%f\n",
-			 ball->x, ball->xvel,
-			 ball->y, ball->yvel);
 
 	// Restrict ball within game
 	if (ball->x - BALL_RADIUS <= BORDER_SIZE) {
@@ -186,26 +180,55 @@ void moveball(double dt)
 		ball->yvel = -ABS(ball->yvel);
 	}
 
+
 	// Brick collision detection
-	for (Brick *b = brickstack; b; b = b->next) {
+	Brick *b = brickstack;
+	while (b) {
 		if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
 			WITHIN(ball->y - BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
+			// Top of ball hit brick
 			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS;
 			ball->yvel *= -1;
+
+			b = breakbrick(b);
+			continue;
 		} else if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y + BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
+			// Bottom of ball hit brick
 			ball->y = b->y - BALL_RADIUS;
 			ball->yvel *= -1;
+
+			b = breakbrick(b);
+			continue;
 		} else if (WITHIN(ball->x - BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
+			// Left of ball hit brick
 			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS;
 			ball->xvel *= -1;
+
+			b = breakbrick(b);
+			continue;
 		} else if (WITHIN(ball->x + BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
+			// Right of ball hit brick
 			ball->x = b->x - BALL_RADIUS;
 			ball->xvel *= -1;
+
+			b = breakbrick(b);
+			continue;
 		}
+
+		b = b->next;
 	}
+}
+
+void setballspeed(double speed)
+{
+	dbprintf(DEBUG_BALL, "New speed: %.2f (%.2f, %.2f)",
+			speed, speed * BALL_XFACT, speed * BALL_YFACT);
+	ball->speed = speed;
+	ball->xvel = speed * BALL_XFACT;
+	ball->yvel = speed * BALL_YFACT;
 }
 
 /*
@@ -317,7 +340,6 @@ void run()
 		double newtime = (double)tp.tv_nsec / 1000000000 + tp.tv_sec;
 		dt = newtime - oldtime;
 		oldtime = newtime;
-
 
 		dbprintf(DEBUG_GAME, "FPS %.2f\n", 1.0 / MAX(0.0001, dt));
 		
