@@ -6,18 +6,6 @@
 #include "util.h"
 
 
-#define FPS 60 /* maximum fps */
-
-#define GAME_WIDTH  800
-#define GAME_HEIGHT 600
-
-#define NUM_BRICKS   15
-#define BRICK_WIDTH  48
-#define BRICK_HEIGHT 12
-#define BRICK_WGAP    5
-#define BRICK_HGAP    5
-
-
 typedef struct Color {
 	unsigned short r;
 	unsigned short g;
