@@ -28,7 +28,8 @@
 static const Color paddle_color = { .r = 0x22, .g = 0x44, .b = 0xbb };
 static const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
 
-static const Layer layers[] = {
+
+static const Layer game_level[] = {
 	{  500, { .r = 0xff, .g = 0x00, .b = 0xff } },
 	{  475, { .r = 0xff, .g = 0x00, .b = 0x00 } },
 	{  475, { .r = 0xff, .g = 0x00, .b = 0x00 } },
@@ -37,5 +38,6 @@ static const Layer layers[] = {
 	{  400, { .r = 0x00, .g = 0xff, .b = 0x00 } },
 	{  350, { .r = 0x00, .g = 0xff, .b = 0xff } },
 	{  300, { .r = 0x00, .g = 0x00, .b = 0xff } },
-	{  300, { .r = 0x00, .g = 0x00, .b = 0xff } }
+	{  300, { .r = 0x00, .g = 0x00, .b = 0xff } },
+	{0}
 };
