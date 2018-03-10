@@ -21,10 +21,6 @@
 #define BALL_RADIUS       10
 #define BALL_SPEED_START 300
 
-// Ball goes 60°
-#define BALL_XFACT 0.5
-#define BALL_YFACT 0.866
-
 #define BORDER_SIZE 5
 
 static const Color paddle_color = { .r = 0x22, .g = 0x44, .b = 0xbb };

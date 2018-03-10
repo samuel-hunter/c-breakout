@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <time.h>
 #include <SDL.h>
 #include <SDL_ttf.h>
@@ -38,6 +39,8 @@ typedef struct Ball {
 	double y;
 
 	double speed;
+	double angle;
+	
 	double xvel;
 	double yvel;
 } Ball;
@@ -52,7 +55,7 @@ static void drawpaddle();
 static void movepaddle(double);
 static void drawball();
 static void moveball();
-static void setballspeed(double);
+static void setballspeed(double, double);
 static int tick(double);
 static void setup();
 static void run();
@@ -101,7 +104,7 @@ Brick *breakbrick(Brick *brick)
 		free(brick);
 
 		if (ball->speed < speed)
-			setballspeed(speed);
+			setballspeed(speed, ball->angle);
 		return brickstack;
 	}
 
@@ -118,7 +121,8 @@ Brick *breakbrick(Brick *brick)
 	free(brick);
 
 	if (ball->speed < speed)
-		setballspeed(speed);
+		setballspeed(speed, ball->angle);
+	
 	return temp->next;
 }
 
@@ -138,7 +142,7 @@ void movepaddle(double dist)
 					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
 
 	if (!ball->speed)
-		setballspeed(BALL_SPEED_START);
+		setballspeed(BALL_SPEED_START, M_PI / 3);
 }
 
 void drawball()
@@ -158,26 +162,25 @@ void moveball(double dt)
 	// Restrict ball within game
 	if (ball->x - BALL_RADIUS <= BORDER_SIZE) {
 		ball->x = BORDER_SIZE + BALL_RADIUS;
-		ball->xvel *= -1;
+		ball->xvel = ABS(ball->xvel);
 	} else if (ball->x + BALL_RADIUS >= GAME_WIDTH - BORDER_SIZE) {
 		ball->x = GAME_WIDTH - BORDER_SIZE - BALL_RADIUS;
-		ball->xvel *= -1;
+		ball->xvel = -ABS(ball->xvel);
 	}
 
 	if (ball->y - BALL_RADIUS <= BORDER_SIZE) {
 		ball->y = BORDER_SIZE + BALL_RADIUS;
-		ball->yvel *= -1;
+		ball->yvel = ABS(ball->yvel);
 	} else if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE) {
 		// TODO make this losing condition
 		ball->y = GAME_HEIGHT - BORDER_SIZE - BALL_RADIUS;
-		ball->yvel *= -1;
+		ball->yvel = -ABS(ball->yvel);
 	}
 
 	// Paddle collision detection
 	if (WITHIN(ball->x, paddle->x, paddle->x + PADDLE_WIDTH) &&
 		ball->y + BALL_RADIUS > paddle->y) {
-		ball->y = paddle->y - BALL_RADIUS;
-		ball->yvel = -ABS(ball->yvel);
+		setballspeed(ball->speed, M_PI * 0.667 * (ball->x - paddle->x)/PADDLE_WIDTH - M_PI * 0.833);
 	}
 
 
@@ -188,33 +191,29 @@ void moveball(double dt)
 			WITHIN(ball->y - BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
 			// Top of ball hit brick
 			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS;
-			ball->yvel *= -1;
-
 			b = breakbrick(b);
+			ball->yvel = ABS(ball->yvel);
 			continue;
 		} else if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y + BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
 			// Bottom of ball hit brick
 			ball->y = b->y - BALL_RADIUS;
-			ball->yvel *= -1;
-
 			b = breakbrick(b);
+			ball->yvel = -ABS(ball->yvel);
 			continue;
 		} else if (WITHIN(ball->x - BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
 			// Left of ball hit brick
 			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS;
-			ball->xvel *= -1;
-
 			b = breakbrick(b);
+			ball->xvel = ABS(ball->xvel);
 			continue;
 		} else if (WITHIN(ball->x + BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
 			// Right of ball hit brick
 			ball->x = b->x - BALL_RADIUS;
-			ball->xvel *= -1;
-
 			b = breakbrick(b);
+			ball->xvel = -ABS(ball->xvel);
 			continue;
 		}
 
@@ -222,13 +221,18 @@ void moveball(double dt)
 	}
 }
 
-void setballspeed(double speed)
+void setballspeed(double speed, double angle)
 {
-	dbprintf(DEBUG_BALL, "New speed: %.2f (%.2f, %.2f)",
-			speed, speed * BALL_XFACT, speed * BALL_YFACT);
+	double xvel = speed * cos(angle);
+	double yvel = speed * sin(angle);
+
+	dbprintf(DEBUG_BALL, "\nSPD: %.2f\tANGLE: %.2f\nX: %.2f\tY: %.2f\n",
+			 speed, angle, xvel, yvel);
+
+	ball->xvel = xvel;
+	ball->yvel = yvel;
 	ball->speed = speed;
-	ball->xvel = speed * BALL_XFACT;
-	ball->yvel = speed * BALL_YFACT;
+	ball->angle = angle;
 }
 
 /*
@@ -317,8 +321,9 @@ void setup()
 	ball = ecalloc(1, sizeof(Ball));
 	ball->x = paddle->x + (PADDLE_WIDTH/2);
 	ball->y = paddle->y - BALL_RADIUS;
-	ball->xvel = 0;
-	ball->yvel = 0;
+	
+	ball->speed = ball->angle = 0;
+	ball->xvel = ball->yvel = 0;
 }
 
 void run()
