@@ -142,7 +142,7 @@ void movepaddle(double dist)
 					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
 
 	if (!ball->speed)
-		setballspeed(BALL_SPEED_START, M_PI / 3);
+		setballspeed(BALL_SPEED_START, BALL_ANGLE_START);
 }
 
 void drawball()
@@ -310,7 +310,7 @@ void setup()
 	for (int l = 0; l < LEN(layers); l++)
 		for (int i = 0; i < NUM_BRICKS; i++)
 			newbrick(&layers[l], i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
-					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_HGAP);
+					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_HGAP + BRICK_Y_OFFSET);
 
 	// Set up paddle
 	paddle = ecalloc(1, sizeof(Paddle));
