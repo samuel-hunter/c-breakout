@@ -100,9 +100,9 @@ void movepaddle(double dist)
 	paddle->x = CLAMP(paddle->x, BORDER_SIZE,
 					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
 
-	if (!ball->xvel || !ball->yvel) {
+	if (!ball->yvel) {
 		ball->xvel = BALL_SPEED_START * BALL_XFACT;
-		ball->yvel = BALL_SPEED_START * BALL_YFACT;
+		ball->yvel = -BALL_SPEED_START * BALL_YFACT;
 	}
 }
 
@@ -110,6 +110,11 @@ void drawball()
 {
 	SDL_SetRenderDrawColor(ren, TRUECOLOR(ball_color), SDL_ALPHA_OPAQUE);
 
+	SDL_Rect rect = { .x = ball->x - BALL_RADIUS, .y = ball->y - BALL_RADIUS,
+				 .w = BALL_RADIUS*2, .h = BALL_RADIUS*2 };
+	SDL_RenderFillRect(ren, &rect);
+
+	/*
 	double error = (double) -BALL_RADIUS;
 	double x = (double)BALL_RADIUS - 0.5;
 	double y = 0.5;
@@ -144,6 +149,7 @@ void drawball()
 			error -= x * 2;
 		}
 	}
+	*/
 }
 
 void moveball(double dt)
@@ -155,6 +161,7 @@ void moveball(double dt)
 			 ball->x, ball->xvel,
 			 ball->y, ball->yvel);
 
+	// Restrict ball within game
 	if (ball->x - BALL_RADIUS <= BORDER_SIZE) {
 		ball->x = BORDER_SIZE + BALL_RADIUS;
 		ball->xvel *= -1;
@@ -170,6 +177,34 @@ void moveball(double dt)
 		// TODO make this losing condition
 		ball->y = GAME_HEIGHT - BORDER_SIZE - BALL_RADIUS;
 		ball->yvel *= -1;
+	}
+
+	// Paddle collision detection
+	if (WITHIN(ball->x, paddle->x, paddle->x + PADDLE_WIDTH) &&
+		ball->y + BALL_RADIUS > paddle->y) {
+		ball->y = paddle->y - BALL_RADIUS;
+		ball->yvel = -ABS(ball->yvel);
+	}
+
+	// Brick collision detection
+	for (Brick *b = brickstack; b; b = b->next) {
+		if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
+			WITHIN(ball->y - BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
+			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS;
+			ball->yvel *= -1;
+		} else if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
+				   WITHIN(ball->y + BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
+			ball->y = b->y - BALL_RADIUS;
+			ball->yvel *= -1;
+		} else if (WITHIN(ball->x - BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
+				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
+			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS;
+			ball->xvel *= -1;
+		} else if (WITHIN(ball->x + BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
+				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
+			ball->x = b->x - BALL_RADIUS;
+			ball->xvel *= -1;
+		}
 	}
 }
 
