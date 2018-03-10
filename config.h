@@ -18,7 +18,12 @@
 #define PADDLE_HEIGHT 20
 #define PADDLE_SPEED 300
 
-#define BALL_RADIUS   10
+#define BALL_RADIUS       10
+#define BALL_SPEED_START 800
+
+// Ball goes 60°
+#define BALL_XFACT 0.5
+#define BALL_YFACT 0.866
 
 #define BORDER_SIZE 5
 
@@ -26,9 +31,12 @@ static const Color paddle_color = { .r = 0x22, .g = 0x44, .b = 0xbb };
 static const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
 
 static const Layer layers[] = {
-	{ 10, { .r = 0xff, .g = 0x00, .b = 0x00 } },
-	{  8, { .r = 0xff, .g = 0xff, .b = 0x00 } },
-	{  5, { .r = 0x00, .g = 0xff, .b = 0x00 } },
-	{  3, { .r = 0x00, .g = 0xff, .b = 0xff } },
-	{  3, { .r = 0x00, .g = 0x00, .b = 0xff } }
+	{  800, { .r = 0xff, .g = 0x00, .b = 0x00 } },
+	{  800, { .r = 0xff, .g = 0x00, .b = 0x00 } },
+	{  700, { .r = 0xff, .g = 0xff, .b = 0x00 } },
+	{  500, { .r = 0x00, .g = 0xff, .b = 0x00 } },
+	{  500, { .r = 0x00, .g = 0xff, .b = 0x00 } },
+	{  400, { .r = 0x00, .g = 0xff, .b = 0xff } },
+	{  300, { .r = 0x00, .g = 0x00, .b = 0xff } },
+	{  300, { .r = 0x00, .g = 0x00, .b = 0xff } }
 };
