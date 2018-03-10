@@ -6,6 +6,7 @@
 #include "util.h"
 
 
+// Quick macro to put in colorin SDL_SetRenderDrawColor
 #define TRUECOLOR(color) color.r, color.g, color.b
 
 typedef struct Color {
@@ -36,6 +37,9 @@ typedef struct Paddle {
 typedef struct Ball {
 	double x;
 	double y;
+
+	double xvel;
+	double yvel;
 } Ball;
 
 
@@ -95,6 +99,11 @@ void movepaddle(double dist)
 	paddle->x += dist;
 	paddle->x = CLAMP(paddle->x, BORDER_SIZE,
 					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
+
+	if (!ball->xvel || !ball->yvel) {
+		ball->xvel = BALL_SPEED_START * BALL_XFACT;
+		ball->yvel = BALL_SPEED_START * BALL_YFACT;
+	}
 }
 
 void drawball()
@@ -137,6 +146,33 @@ void drawball()
 	}
 }
 
+void moveball(double dt)
+{
+	ball->x += ball->xvel * dt;
+	ball->y += ball->yvel * dt;
+
+	dbprintf(DEBUG_SPRITE, "X: %f\t%f\nY: %f\t%f\n",
+			 ball->x, ball->xvel,
+			 ball->y, ball->yvel);
+
+	if (ball->x - BALL_RADIUS <= BORDER_SIZE) {
+		ball->x = BORDER_SIZE + BALL_RADIUS;
+		ball->xvel *= -1;
+	} else if (ball->x + BALL_RADIUS >= GAME_WIDTH - BORDER_SIZE) {
+		ball->x = GAME_WIDTH - BORDER_SIZE - BALL_RADIUS;
+		ball->xvel *= -1;
+	}
+
+	if (ball->y - BALL_RADIUS <= BORDER_SIZE) {
+		ball->y = BORDER_SIZE + BALL_RADIUS;
+		ball->yvel *= -1;
+	} else if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE) {
+		// TODO make this losing condition
+		ball->y = GAME_HEIGHT - BORDER_SIZE - BALL_RADIUS;
+		ball->yvel *= -1;
+	}
+}
+
 /*
  * Return zero to continue game
  */
@@ -162,6 +198,8 @@ int tick(double dt)
 		movepaddle(-PADDLE_SPEED*dt);
 	if (state[SDL_SCANCODE_D] || state[SDL_SCANCODE_RIGHT])
 		movepaddle(PADDLE_SPEED*dt);
+
+	moveball(dt);
 
 	for (Brick *b = brickstack; b; b = b->next)
 		drawbrick(b);
@@ -221,6 +259,8 @@ void setup()
 	ball = ecalloc(1, sizeof(Ball));
 	ball->x = paddle->x + (PADDLE_WIDTH/2);
 	ball->y = paddle->y - BALL_RADIUS;
+	ball->xvel = 0;
+	ball->yvel = 0;
 }
 
 void run()
@@ -255,6 +295,16 @@ void cleanup()
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
 	SDL_Quit();
+
+	// Free up allocated memory like a good kid
+	free(ball);
+	free(paddle);
+	Brick *b = brickstack;
+	while (b) {
+		Brick *next = b->next;
+		free(b);
+		b = next;
+	}
 }
 
 int main(int argc, char **argv)
