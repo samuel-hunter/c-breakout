@@ -16,6 +16,9 @@
 
 #define PADDLE_WIDTH 100
 #define PADDLE_HEIGHT 20
+#define PADDLE_SPEED 300
+
+#define BORDER_SIZE 5
 
 static const Color paddle_color = { .r = 0x22, .g = 0x44, .b = 0xbb };
 
