@@ -33,6 +33,11 @@ typedef struct Paddle {
 	int y;
 } Paddle;
 
+typedef struct Ball {
+	int x;
+	int y;
+} Ball;
+
 
 #include "config.h"
 
@@ -40,6 +45,7 @@ static Brick *newbrick(const Layer*, int, int);
 static void drawbrick(Brick*);
 static void drawpaddle();
 static void movepaddle(int);
+static void drawball();
 static int tick(int);
 static void setup();
 static void run();
@@ -49,6 +55,7 @@ static SDL_Window *win = NULL;
 static SDL_Renderer *ren = NULL;
 static Brick *brickstack = NULL;
 static Paddle *paddle = NULL;
+static Ball *ball = NULL;
 
 
 Brick *newbrick(const Layer *layer, int x, int y)
@@ -90,6 +97,46 @@ void movepaddle(int dist)
 					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
 }
 
+void drawball()
+{
+	SDL_SetRenderDrawColor(ren, TRUECOLOR(ball_color), SDL_ALPHA_OPAQUE);
+
+	double error = (double) -BALL_RADIUS;
+	double x = (double)BALL_RADIUS - 0.5;
+	double y = 0.5;
+	double cx = (double) ball->x - 0.5;
+	double cy = (double) ball->y - 0.5;
+
+	while (x >= y) {
+		SDL_RenderDrawPoint(ren, (int)(cx + x), (int)(cy + y));
+		SDL_RenderDrawPoint(ren, (int)(cx + y), (int)(cy + x));
+
+		if (x) {
+			SDL_RenderDrawPoint(ren, (int)(cx - x), (int)(cy + y));
+			SDL_RenderDrawPoint(ren, (int)(cx + y), (int)(cy - x));
+		}
+
+		if (y) {
+			SDL_RenderDrawPoint(ren, (int)(cx + x), (int)(cy - y));
+			SDL_RenderDrawPoint(ren, (int)(cx - y), (int)(cy + x));
+		}
+
+		if (x && y) {
+			SDL_RenderDrawPoint(ren, (int)(cx - x), (int)(cy - y));
+			SDL_RenderDrawPoint(ren, (int)(cx - y), (int)(cy - x));
+		}
+
+		error += y;
+		y++;
+		error += y;
+
+		if (error >= 0) {
+			x--;
+			error -= x * 2;
+		}
+	}
+}
+
 /*
  * Return zero to continue game
  */
@@ -120,6 +167,7 @@ int tick(int dt_millis)
 		drawbrick(b);
 
 	drawpaddle();
+	drawball();
 
 	SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
 	SDL_Rect rect = { .x = 0, .y = 0, .w = GAME_WIDTH, .h = GAME_HEIGHT };
@@ -133,6 +181,7 @@ int tick(int dt_millis)
  */
 void setup()
 {
+	// Set up SDL
 	if (SDL_Init(SDL_INIT_VIDEO))
 		die("SDL_INIT: %s\n", SDL_GetError());
 
@@ -167,6 +216,11 @@ void setup()
 	paddle = ecalloc(1, sizeof(Paddle));
 	paddle->x = (GAME_WIDTH - PADDLE_WIDTH) / 2;
 	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - BORDER_SIZE;
+
+	// Set up ball
+	ball = ecalloc(1, sizeof(Ball));
+	ball->x = paddle->x + (PADDLE_WIDTH/2);
+	ball->y = paddle->y - BALL_RADIUS;
 }
 
 void run()

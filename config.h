@@ -18,9 +18,12 @@
 #define PADDLE_HEIGHT 20
 #define PADDLE_SPEED 300
 
+#define BALL_RADIUS   10
+
 #define BORDER_SIZE 5
 
 static const Color paddle_color = { .r = 0x22, .g = 0x44, .b = 0xbb };
+static const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
 
 static const Layer layers[] = {
 	{ 10, { .r = 0xff, .g = 0x00, .b = 0x00 } },
