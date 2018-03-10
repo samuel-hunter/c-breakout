@@ -25,7 +25,7 @@ void *ecalloc(size_t nmemb, size_t size)
 
 void dbprintf(unsigned int lvl, const char *fmt, ...)
 {
-    if (lvl < DEBUG_LEVEL) return;
+    if (!(lvl & DEBUG_LEVEL)) return;
     
     va_list ap;
     va_start(ap, fmt);
