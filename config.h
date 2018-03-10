@@ -15,7 +15,7 @@
 #define BRICK_HGAP    5
 
 
-Layer layers[] = {
+static const Layer layers[] = {
 	{ 10, { .r = 0xff, .g = 0x00, .b = 0x00 } },
 	{  8, { .r = 0xff, .g = 0xff, .b = 0x00 } },
 	{  5, { .r = 0x00, .g = 0xff, .b = 0x00 } },

@@ -12,22 +12,24 @@ typedef struct Color {
 	unsigned short b;
 } Color;
 
-typedef struct Brick {
-	int x;
-	int y;
-	Color color;
-	struct Brick *next;
-} Brick;
-
 typedef struct Layer {
 	int speed;
 	Color color;
 } Layer;
 
+typedef struct Brick {
+	int x;
+	int y;
+	const Layer *layer;
+	int speed;
+	Color color;
+	struct Brick *next;
+} Brick;
+
 
 #include "config.h"
 
-static Brick *newbrick(Layer, int, int);
+static Brick *newbrick(const Layer*, int, int);
 static void drawbrick(Brick*);
 static int tick(int);
 static void setup();
@@ -39,12 +41,12 @@ static SDL_Renderer *ren = NULL;
 static Brick *brickstack = NULL;
 
 
-Brick *newbrick(Layer layer, int x, int y)
+Brick *newbrick(const Layer *layer, int x, int y)
 {
 	Brick *b = ecalloc(1, sizeof(Brick));
 	b->x = x;
 	b->y = y;
-	b->color = layer.color;
+	b->layer = layer;
 
 	b->next = brickstack;
 	brickstack = b;
@@ -54,8 +56,8 @@ Brick *newbrick(Layer layer, int x, int y)
 
 void drawbrick(Brick *brick)
 {
-	SDL_SetRenderDrawColor(ren, brick->color.r, brick->color.g,
-						   brick->color.b, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(ren, brick->layer->color.r, brick->layer->color.g,
+						   brick->layer->color.b, SDL_ALPHA_OPAQUE);
 
 	SDL_Rect rect = { .x = brick->x, .y = brick->y,
 					  .w = BRICK_WIDTH, .h = BRICK_HEIGHT };
@@ -70,11 +72,13 @@ int tick(int dt_millis)
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT)
-				return -1;
+				return 1;
 		if (event.type == SDL_KEYDOWN)
 			switch (event.key.keysym.scancode) {
 			case SDL_SCANCODE_ESCAPE:
-				return -1;
+				return 1;
+			case SDL_SCANCODE_Q:
+				return 1;
 			default:
 				break;
 			}
@@ -82,6 +86,10 @@ int tick(int dt_millis)
 
 	for (Brick *b = brickstack; b; b = b->next)
 		drawbrick(b);
+
+	SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
+	SDL_Rect rect = { .x = 0, .y = 0, .w = GAME_WIDTH, .h = GAME_HEIGHT };
+	SDL_RenderDrawRect(ren, &rect);
 
 	return 0;
 }
@@ -118,7 +126,7 @@ void setup()
 	// Set up bricks
 	for (int l = 0; l < LEN(layers); l++)
 		for (int i = 0; i < NUM_BRICKS; i++)
-			newbrick(layers[l], i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
+			newbrick(&layers[l], i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
 					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_HGAP);
 }
 
@@ -142,7 +150,7 @@ void run()
 		dt = newmillis - millis;
 		millis = newmillis;
 
-		dbprintf(DEBUG_INFO, "FPS %i\n", dt ? (1000 / dt) : 9999);
+		dbprintf(DEBUG_INFO, "FPS %i\n", 1000 / MAX(1, dt));
 		
 		SDL_Delay(MAX(1000 / FPS - dt, 0));
 	}
