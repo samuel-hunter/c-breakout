@@ -19,7 +19,7 @@
 #define PADDLE_SPEED 300
 
 #define BALL_RADIUS       10
-#define BALL_SPEED_START 800
+#define BALL_SPEED_START 300
 
 // Ball goes 60°
 #define BALL_XFACT 0.5

@@ -4,7 +4,9 @@
 
 #define MAX(a, b) ((a > b) ? a : b)
 #define MIN(a, b) ((a > b) ? b : a)
-#define CLAMP(x, min, max) (x > max) ? max : ((x < min) ? min : x)
+#define WITHIN(x, min, max) ((x >= min) && (x <= max))
+#define ABS(x) ((x >= 0) ? (x) : -(x))
+#define CLAMP(x, min, max) ((x > max) ? (max) : ((x < min) ? (min) : (x)))
 #define LEN(a)    (sizeof(a) / sizeof(a[0]))
 
 #define DEBUG_WARN   0x01
