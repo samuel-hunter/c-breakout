@@ -57,6 +57,8 @@ static void drawball();
 static void moveball();
 static void setballspeed(double, double);
 static int tick(double);
+static void reset_paddle();
+static void setup_level(const Layer*);
 static void setup();
 static void run();
 static void cleanup();
@@ -172,9 +174,7 @@ void moveball(double dt)
 		ball->y = BORDER_SIZE + BALL_RADIUS;
 		ball->yvel = ABS(ball->yvel);
 	} else if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE) {
-		// TODO make this losing condition
-		ball->y = GAME_HEIGHT - BORDER_SIZE - BALL_RADIUS;
-		ball->yvel = -ABS(ball->yvel);
+		reset_paddle();
 	}
 
 	// Paddle collision detection
@@ -276,6 +276,37 @@ int tick(double dt)
 	return 0;
 }
 
+void reset_paddle()
+{
+	// Setup paddle
+	paddle->x = (GAME_WIDTH - PADDLE_WIDTH) / 2;
+	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - BORDER_SIZE;
+
+	// Setup ball
+	ball->x = paddle->x + PADDLE_WIDTH/2;
+	ball->y = paddle->y - BALL_RADIUS;
+	ball->speed = ball->angle = ball->xvel = ball->yvel = 0;
+}
+
+void setup_level(const Layer *level)
+{
+	reset_paddle();
+
+	// Remove preexisting bricks (if any)
+	Brick *b = brickstack;
+	while (b) {
+		Brick *tmp = b->next;
+		free(b);
+		b = tmp;
+	}
+
+	// Set up bricks
+	for (int l = 0; level[l].speed > 0; l++)
+		for (int i = 0; i < NUM_BRICKS; i++)
+			newbrick(level+l, i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
+					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_HGAP + BRICK_Y_OFFSET);
+}
+
 /*
  * Create window, renderer
  */
@@ -305,25 +336,9 @@ void setup()
 		die("SDL_CreateRenderer: %s\n", SDL_GetError());
 	}
 
-
-	// Set up bricks
-	for (int l = 0; l < LEN(layers); l++)
-		for (int i = 0; i < NUM_BRICKS; i++)
-			newbrick(&layers[l], i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
-					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_HGAP + BRICK_Y_OFFSET);
-
-	// Set up paddle
 	paddle = ecalloc(1, sizeof(Paddle));
-	paddle->x = (GAME_WIDTH - PADDLE_WIDTH) / 2;
-	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - BORDER_SIZE;
-
-	// Set up ball
 	ball = ecalloc(1, sizeof(Ball));
-	ball->x = paddle->x + (PADDLE_WIDTH/2);
-	ball->y = paddle->y - BALL_RADIUS;
-	
-	ball->speed = ball->angle = 0;
-	ball->xvel = ball->yvel = 0;
+	setup_level(game_level);
 }
 
 void run()
