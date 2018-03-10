@@ -13,9 +13,10 @@
 #define DEBUG_ERR    0x02
 
 #define DEBUG_GAME   0x04
-#define DEBUG_SPRITE 0x08
+#define DEBUG_BALL   0x08
+#define DEBUG_BRICK  0x10
 
-#define DEBUG_LEVEL (DEBUG_WARN | DEBUG_ERR | DEBUG_SPRITE)
+#define DEBUG_LEVEL (DEBUG_WARN | DEBUG_ERR)
 
 extern void die(const char* fmt, ...);
 extern void *ecalloc(size_t nmemb, size_t size);
