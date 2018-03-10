@@ -105,9 +105,8 @@ Brick *breakbrick(Brick *brick)
 		brickstack = brickstack->next;
 		free(brick);
 
-		if (ball->speed < speed)
-			setballspeed(speed, ball->angle);
-		return brickstack;
+		temp = brickstack;
+		goto finish;
 	}
 
 	// Select the previous brick
@@ -121,11 +120,21 @@ Brick *breakbrick(Brick *brick)
 			 temp, brick->next, brick);
 	temp->next = brick->next;
 	free(brick);
-
-	if (ball->speed < speed)
-		setballspeed(speed, ball->angle);
 	
-	return temp->next;
+	temp = temp->next;
+	
+ finish:
+
+	if (ball->speed < speed) {
+		int xdir = SIGNUM(ball->xvel);
+		int ydir = SIGNUM(ball->yvel);
+		setballspeed(speed, ball->angle);
+
+		ball->xvel = xdir * ABS(ball->xvel);
+		ball->yvel = ydir * ABS(ball->yvel);
+	}
+	
+	return temp;
 }
 
 void drawpaddle()
