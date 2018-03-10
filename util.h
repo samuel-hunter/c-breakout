@@ -6,6 +6,7 @@
 #define MIN(a, b) ((a > b) ? b : a)
 #define WITHIN(x, min, max) ((x >= min) && (x <= max))
 #define ABS(x) ((x >= 0) ? (x) : -(x))
+#define SIGNUM(x) ((x >= 0) ? 1 : -1)
 #define CLAMP(x, min, max) ((x > max) ? (max) : ((x < min) ? (min) : (x)))
 #define LEN(a)    (sizeof(a) / sizeof(a[0]))
 
