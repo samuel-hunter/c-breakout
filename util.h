@@ -7,13 +7,13 @@
 #define CLAMP(x, min, max) (x > max) ? max : ((x < min) ? min : x)
 #define LEN(a)    (sizeof(a) / sizeof(a[0]))
 
-#define DEBUG_INFO  0
-#define DEBUG_WARN  1
-#define DEBUG_ERR   2
-#define DEBUG_CRIT  3
-#define DEBUG_FATAL 4
+#define DEBUG_WARN   0x01
+#define DEBUG_ERR    0x02
 
-#define DEBUG_LEVEL DEBUG_INFO
+#define DEBUG_GAME   0x04
+#define DEBUG_SPRITE 0x08
+
+#define DEBUG_LEVEL (DEBUG_WARN | DEBUG_ERR)
 
 extern void die(const char* fmt, ...);
 extern void *ecalloc(size_t nmemb, size_t size);

@@ -189,7 +189,7 @@ void run()
 		dt = newmillis - millis;
 		millis = newmillis;
 
-		dbprintf(DEBUG_INFO, "FPS %i\n", 1000 / MAX(1, dt));
+		dbprintf(DEBUG_GAME, "FPS %i\n", 1000 / MAX(1, dt));
 		
 		SDL_Delay(MAX(1000 / FPS - dt, 0));
 	}
