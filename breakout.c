@@ -29,13 +29,13 @@ typedef struct Brick {
 } Brick;
 
 typedef struct Paddle {
-	int x;
-	int y;
+	double x;
+	double y;
 } Paddle;
 
 typedef struct Ball {
-	int x;
-	int y;
+	double x;
+	double y;
 } Ball;
 
 
@@ -44,9 +44,9 @@ typedef struct Ball {
 static Brick *newbrick(const Layer*, int, int);
 static void drawbrick(Brick*);
 static void drawpaddle();
-static void movepaddle(int);
+static void movepaddle(double);
 static void drawball();
-static int tick(int);
+static int tick(double);
 static void setup();
 static void run();
 static void cleanup();
@@ -85,12 +85,12 @@ void drawpaddle()
 {
 	SDL_SetRenderDrawColor(ren, TRUECOLOR(paddle_color),
 						   SDL_ALPHA_OPAQUE);
-	SDL_Rect rect = { .x = paddle->x, .y = paddle->y,
+	SDL_Rect rect = { .x = (int)paddle->x, .y = (int)paddle->y,
 					  .w = PADDLE_WIDTH, .h = PADDLE_HEIGHT };
 	SDL_RenderFillRect(ren, &rect);
 }
 
-void movepaddle(int dist)
+void movepaddle(double dist)
 {
 	paddle->x += dist;
 	paddle->x = CLAMP(paddle->x, BORDER_SIZE,
@@ -104,8 +104,8 @@ void drawball()
 	double error = (double) -BALL_RADIUS;
 	double x = (double)BALL_RADIUS - 0.5;
 	double y = 0.5;
-	double cx = (double) ball->x - 0.5;
-	double cy = (double) ball->y - 0.5;
+	double cx = ball->x - 0.5;
+	double cy = ball->y - 0.5;
 
 	while (x >= y) {
 		SDL_RenderDrawPoint(ren, (int)(cx + x), (int)(cy + y));
@@ -140,7 +140,7 @@ void drawball()
 /*
  * Return zero to continue game
  */
-int tick(int dt_millis)
+int tick(double dt)
 {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
@@ -159,9 +159,9 @@ int tick(int dt_millis)
 
 	const uint8_t *state = SDL_GetKeyboardState(NULL);
 	if (state[SDL_SCANCODE_A] || state[SDL_SCANCODE_LEFT])
-		movepaddle(-PADDLE_SPEED*dt_millis/1000);
+		movepaddle(-PADDLE_SPEED*dt);
 	if (state[SDL_SCANCODE_D] || state[SDL_SCANCODE_RIGHT])
-		movepaddle(PADDLE_SPEED*dt_millis/1000);
+		movepaddle(PADDLE_SPEED*dt);
 
 	for (Brick *b = brickstack; b; b = b->next)
 		drawbrick(b);
@@ -227,8 +227,8 @@ void run()
 {
 	struct timespec tp;
 	clock_gettime(CLOCK_MONOTONIC, &tp);
-	long millis = (tp.tv_nsec / 1000000) + (tp.tv_sec * 1000);
-	int dt = 0;
+	double oldtime = (double)tp.tv_nsec / 1000000000 + tp.tv_sec;
+	double dt = 0;
 	
 	while (1) {
 		SDL_SetRenderDrawColor(ren, BGCOLOR, SDL_ALPHA_OPAQUE);
@@ -239,13 +239,14 @@ void run()
 		SDL_RenderPresent(ren);
 
 		clock_gettime(CLOCK_MONOTONIC, &tp);
-		long newmillis = (tp.tv_nsec / 1000000) + (tp.tv_sec * 1000);
-		dt = newmillis - millis;
-		millis = newmillis;
+		double newtime = (double)tp.tv_nsec / 1000000000 + tp.tv_sec;
+		dt = newtime - oldtime;
+		oldtime = newtime;
 
-		dbprintf(DEBUG_GAME, "FPS %i\n", 1000 / MAX(1, dt));
+
+		dbprintf(DEBUG_GAME, "FPS %.2f\n", 1.0 / MAX(0.0001, dt));
 		
-		SDL_Delay(MAX(1000 / FPS - dt, 0));
+		SDL_Delay(MAX(1000 / FPS - dt*1000, 0));
 	}
 }
 
