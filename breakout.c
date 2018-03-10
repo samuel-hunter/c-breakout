@@ -6,6 +6,8 @@
 #include "util.h"
 
 
+#define TRUECOLOR(color) color.r, color.g, color.b
+
 typedef struct Color {
 	unsigned short r;
 	unsigned short g;
@@ -26,11 +28,17 @@ typedef struct Brick {
 	struct Brick *next;
 } Brick;
 
+typedef struct Paddle {
+	int x;
+	int y;
+} Paddle;
+
 
 #include "config.h"
 
 static Brick *newbrick(const Layer*, int, int);
 static void drawbrick(Brick*);
+static void drawpaddle();
 static int tick(int);
 static void setup();
 static void run();
@@ -39,6 +47,7 @@ static void cleanup();
 static SDL_Window *win = NULL;
 static SDL_Renderer *ren = NULL;
 static Brick *brickstack = NULL;
+static Paddle *paddle = NULL;
 
 
 Brick *newbrick(const Layer *layer, int x, int y)
@@ -56,11 +65,20 @@ Brick *newbrick(const Layer *layer, int x, int y)
 
 void drawbrick(Brick *brick)
 {
-	SDL_SetRenderDrawColor(ren, brick->layer->color.r, brick->layer->color.g,
-						   brick->layer->color.b, SDL_ALPHA_OPAQUE);
+	SDL_SetRenderDrawColor(ren, TRUECOLOR(brick->layer->color),
+						   SDL_ALPHA_OPAQUE);
 
 	SDL_Rect rect = { .x = brick->x, .y = brick->y,
 					  .w = BRICK_WIDTH, .h = BRICK_HEIGHT };
+	SDL_RenderFillRect(ren, &rect);
+}
+
+void drawpaddle()
+{
+	SDL_SetRenderDrawColor(ren, TRUECOLOR(paddle_color),
+						   SDL_ALPHA_OPAQUE);
+	SDL_Rect rect = { .x = paddle->x, .y = paddle->y,
+					  .w = PADDLE_WIDTH, .h = PADDLE_HEIGHT };
 	SDL_RenderFillRect(ren, &rect);
 }
 
@@ -86,6 +104,8 @@ int tick(int dt_millis)
 
 	for (Brick *b = brickstack; b; b = b->next)
 		drawbrick(b);
+
+	drawpaddle();
 
 	SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
 	SDL_Rect rect = { .x = 0, .y = 0, .w = GAME_WIDTH, .h = GAME_HEIGHT };
@@ -128,6 +148,11 @@ void setup()
 		for (int i = 0; i < NUM_BRICKS; i++)
 			newbrick(&layers[l], i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
 					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_HGAP);
+
+	// Set up paddle
+	paddle = ecalloc(1, sizeof(Paddle));
+	paddle->x = (GAME_WIDTH - PADDLE_WIDTH) / 2;
+	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - 5;
 }
 
 void run()

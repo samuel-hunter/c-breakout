@@ -14,6 +14,10 @@
 #define BRICK_WGAP   10
 #define BRICK_HGAP    5
 
+#define PADDLE_WIDTH 100
+#define PADDLE_HEIGHT 20
+
+static const Color paddle_color = { .r = 0x22, .g = 0x44, .b = 0xbb };
 
 static const Layer layers[] = {
 	{ 10, { .r = 0xff, .g = 0x00, .b = 0x00 } },
