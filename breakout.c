@@ -8,13 +8,71 @@
 
 #define FPS 60 /* maximum fps */
 
+#define GAME_WIDTH  800
+#define GAME_HEIGHT 600
+
+#define NUM_BRICKS   15
+#define BRICK_WIDTH  48
+#define BRICK_HEIGHT 12
+#define BRICK_WGAP    5
+#define BRICK_HGAP    5
+
+
+typedef struct Color {
+	unsigned short r;
+	unsigned short g;
+	unsigned short b;
+} Color;
+
+typedef struct Brick {
+	int x;
+	int y;
+	Color color;
+	struct Brick *next;
+} Brick;
+
+typedef struct Layer {
+	int speed;
+	Color color;
+} Layer;
+
+
+#include "config.h"
+
+static Brick *newbrick(Layer, int, int);
+static void drawbrick(Brick*);
+static int tick(int);
 static void setup();
 static void run();
 static void cleanup();
-int tick(int);
 
 static SDL_Window *win = NULL;
 static SDL_Renderer *ren = NULL;
+static Brick *brickstack = NULL;
+
+
+Brick *newbrick(Layer layer, int x, int y)
+{
+	Brick *b = ecalloc(1, sizeof(Brick));
+	b->x = x;
+	b->y = y;
+	b->color = layer.color;
+
+	b->next = brickstack;
+	brickstack = b;
+
+	return b;
+}
+
+void drawbrick(Brick *brick)
+{
+	SDL_SetRenderDrawColor(ren, brick->color.r, brick->color.g,
+						   brick->color.b, SDL_ALPHA_OPAQUE);
+
+	SDL_Rect rect = { .x = brick->x, .y = brick->y,
+					  .w = BRICK_WIDTH, .h = BRICK_HEIGHT };
+	SDL_RenderFillRect(ren, &rect);
+}
 
 /*
  * Return zero to continue game
@@ -34,6 +92,9 @@ int tick(int dt_millis)
 			}
 	}
 
+	for (Brick *b = brickstack; b; b = b->next)
+		drawbrick(b);
+
 	return 0;
 }
 
@@ -47,7 +108,7 @@ void setup()
 
 	win = SDL_CreateWindow("Breakout",
 						   100, 100,
-						   800, 600,
+						   GAME_WIDTH, GAME_HEIGHT,
 						   SDL_WINDOW_SHOWN);
 	
 	if (!win) {
@@ -64,6 +125,13 @@ void setup()
 		SDL_Quit();
 		die("SDL_CreateRenderer: %s\n", SDL_GetError());
 	}
+
+
+	// Set up bricks
+	for (int l = 0; l < LEN(layers); l++)
+		for (int i = 0; i < NUM_BRICKS; i++)
+			newbrick(layers[l], i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
+					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_HGAP);
 }
 
 void run()
