@@ -170,15 +170,20 @@ void movepaddle(double dist)
  */
 int ballcollideswith(SDL_Rect *rect)
 {
-	if (WITHIN(ball->y - BALL_RADIUS, rect->y, rect->y + rect->h) &&
-		WITHIN(ball->x, rect->x, rect->x + rect->w)) return 1;
-	if (WITHIN(ball->y + BALL_RADIUS, rect->y, rect->y + rect->h) &&
-		WITHIN(ball->x, rect->x, rect->x + rect->w)) return 2;
+	int bl, br, bu, bd, // ball (left, right, up, down)
+		rl, rr, ru, rd; // rect (...)
+	bl = ball->x - BALL_RADIUS;
+	br = ball->x + BALL_RADIUS;
+	bu = ball->y - BALL_RADIUS;
+	bd = ball->y + BALL_RADIUS;
+	rr = (rl = rect->x) + rect->w;
+	rd = (ru = rect->y) + rect->h;
 
-	if (WITHIN(ball->x - BALL_RADIUS, rect->x, rect->x + rect->w) &&
-		WITHIN(ball->y, rect->y, rect->y + rect->h)) return 3;
-	if (WITHIN(ball->x + BALL_RADIUS, rect->x, rect->x + rect->w) &&
-		WITHIN(ball->y, rect->y, rect->y + rect->h)) return 4;
+	// Bias the edge detected against the player's favor
+	if (WITHIN(bu, ru, rd) && br >= rl && bl <= rr) return 1;
+	if (WITHIN(bl, rl, rr) && bd >= ru && bu <= rd) return 3;
+	if (WITHIN(br, rl, rr) && bd >= ru && bu <= rd) return 4;
+	if (WITHIN(bd, ru, rd) && br >= rl && bl <= rr) return 2;
 
 	return 0;
 }
@@ -239,22 +244,22 @@ void moveball(double dt)
 		int edge = ballcollideswith(&r);
 		switch (edge) {
 		case 1: // Top edge hits brick
-			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS;
+			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS + 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, -ball->angle);
 			break;
 		case 2: // Bottom edge hits brick
-			ball->y = b->y - BALL_RADIUS;
+			ball->y = b->y - BALL_RADIUS - 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, -ball->angle);
 			break;
 		case 3: // Left edge hits brick
-			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS;
+			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS + 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, M_PI - ball->angle);
 			break;
 		case 4: // Right edge hits brick
-			ball->x = b->x - BALL_RADIUS;
+			ball->x = b->x - BALL_RADIUS - 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, M_PI - ball->angle);
 			break;
