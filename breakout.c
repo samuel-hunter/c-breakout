@@ -192,24 +192,31 @@ int moveball(double dt)
 
 	// Restrict ball within game
 	if (ball->x - BALL_RADIUS <= BORDER_SIZE) {
+		// Ball hit left of area
 		ball->x = BORDER_SIZE + BALL_RADIUS;
-		ball->xvel = ABS(ball->xvel);
+		setballspeed(ball->speed, M_PI - ball->angle);
 	} else if (ball->x + BALL_RADIUS >= GAME_WIDTH - BORDER_SIZE) {
+		// Ball hit right of area
 		ball->x = GAME_WIDTH - BORDER_SIZE - BALL_RADIUS;
-		ball->xvel = -ABS(ball->xvel);
+		setballspeed(ball->speed, M_PI - ball->angle);
 	}
 
 	if (ball->y - BALL_RADIUS <= BORDER_SIZE) {
+		// Ball hit top of area
 		ball->y = BORDER_SIZE + BALL_RADIUS;
-		ball->yvel = ABS(ball->yvel);
+		setballspeed(ball->speed, -ball->angle);
 	} else if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE) {
+		// Ball hit bottom
 		return 1;
 	}
 
 	// Paddle collision detection
 	if (WITHIN(ball->x, paddle->x, paddle->x + PADDLE_WIDTH) &&
 		ball->y + BALL_RADIUS > paddle->y) {
-		setballspeed(ball->speed, M_PI * 0.667 * (ball->x - paddle->x)/PADDLE_WIDTH - M_PI * 0.833);
+		// Depending on position of paddle, change ball angle to
+		//  within [5pi/6, pi/6]
+		setballspeed(ball->speed,
+					 M_PI * (0.8333 - 0.6667 * (ball->x - paddle->x)/PADDLE_WIDTH));
 	}
 
 
@@ -221,28 +228,28 @@ int moveball(double dt)
 			// Top of ball hit brick
 			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS;
 			b = breakbrick(b);
-			ball->yvel = ABS(ball->yvel);
+			setballspeed(ball->speed, -ball->angle);
 			continue;
 		} else if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y + BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
 			// Bottom of ball hit brick
 			ball->y = b->y - BALL_RADIUS;
 			b = breakbrick(b);
-			ball->yvel = -ABS(ball->yvel);
+			setballspeed(ball->speed, -ball->angle);
 			continue;
 		} else if (WITHIN(ball->x - BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
 			// Left of ball hit brick
 			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS;
 			b = breakbrick(b);
-			ball->xvel = ABS(ball->xvel);
+			setballspeed(ball->speed, M_PI - ball->angle);
 			continue;
 		} else if (WITHIN(ball->x + BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
 				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
 			// Right of ball hit brick
 			ball->x = b->x - BALL_RADIUS;
 			b = breakbrick(b);
-			ball->xvel = -ABS(ball->xvel);
+			setballspeed(ball->speed, M_PI - ball->angle);
 			continue;
 		}
 
@@ -256,8 +263,10 @@ int moveball(double dt)
 void setballspeed(double speed, double angle)
 {
 	double xvel = speed * cos(angle);
-	double yvel = speed * sin(angle);
+	// Negate, because up in math is down in computers
+	double yvel = speed * -sin(angle);
 
+	dbprintf(DEBUG_BALL, "%.2f -> %.2f\n", ball->angle, angle);
 	dbprintf(DEBUG_BALL, "\nSPD: %.2f\tANGLE: %.2f\nX: %.2f\tY: %.2f\n",
 			 speed, angle, xvel, yvel);
 
