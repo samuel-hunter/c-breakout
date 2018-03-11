@@ -51,12 +51,13 @@ typedef struct Ball {
 static Brick *newbrick(const Layer*, int, int);
 static void drawbrick(Brick*);
 static Brick *breakbrick(Brick*);
+static void emptybrickstack();
 static void drawpaddle();
 static void movepaddle(double);
 static void drawball();
-static void moveball();
+static int moveball();
 static void setballspeed(double, double);
-static int tick(double);
+static int tick(double, int);
 static void reset_paddle();
 static void setup_level(size_t);
 static void setup();
@@ -69,7 +70,6 @@ static Brick *brickstack = NULL;
 static Paddle *paddle = NULL;
 static Ball *ball = NULL;
 static size_t level = 0;
-
 
 Brick *newbrick(const Layer *layer, int x, int y)
 {
@@ -142,6 +142,15 @@ Brick *breakbrick(Brick *brick)
 	return temp;
 }
 
+void emptybrickstack()
+{
+	while (brickstack) {
+		Brick *tmp = brickstack->next;
+		free(brickstack);
+		brickstack = tmp;
+	}
+}
+
 void drawpaddle()
 {
 	SDL_SetRenderDrawColor(ren, TRUECOLOR(paddle_color),
@@ -170,7 +179,13 @@ void drawball()
 	SDL_RenderFillRect(ren, &rect);
 }
 
-void moveball(double dt)
+/*
+ * Return:
+ *   1 if ball hit floor.
+ *   2 if ball breaks last brick.
+ *   0 otherwise.
+ */
+int moveball(double dt)
 {
 	ball->x += ball->xvel * dt;
 	ball->y += ball->yvel * dt;
@@ -188,7 +203,7 @@ void moveball(double dt)
 		ball->y = BORDER_SIZE + BALL_RADIUS;
 		ball->yvel = ABS(ball->yvel);
 	} else if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE) {
-		reset_paddle();
+		return 1;
 	}
 
 	// Paddle collision detection
@@ -233,6 +248,9 @@ void moveball(double dt)
 
 		b = b->next;
 	}
+	if (!brickstack) return 2;
+
+	return 0;
 }
 
 void setballspeed(double speed, double angle)
@@ -250,44 +268,84 @@ void setballspeed(double speed, double angle)
 }
 
 /*
- * Return zero to continue game
+ * Return a negative value to stop the game.
+ * Any other number will be passed down to `state`.
  */
-int tick(double dt)
+static double transitiontime = 0;
+int tick(double dt, int state)
 {
+	dbprintf(DEBUG_GAME, "tick(%f, %i)\n", dt, state);
+	
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT)
-				return 1;
+				return -1;
 		if (event.type == SDL_KEYDOWN && !event.key.repeat)
 			switch (event.key.keysym.scancode) {
 			case SDL_SCANCODE_ESCAPE:
-				return 1;
 			case SDL_SCANCODE_Q:
-				return 1;
+				return -1;
 			default:
 				break;
 			}
 	}
 
-	const uint8_t *state = SDL_GetKeyboardState(NULL);
-	if (state[SDL_SCANCODE_A] || state[SDL_SCANCODE_LEFT])
-		movepaddle(-PADDLE_SPEED*dt);
-	if (state[SDL_SCANCODE_D] || state[SDL_SCANCODE_RIGHT])
-		movepaddle(PADDLE_SPEED*dt);
+	if (state == 0) {
+		// Normal state
+		const uint8_t *kbstate = SDL_GetKeyboardState(NULL);
+		if (kbstate[SDL_SCANCODE_A] || kbstate[SDL_SCANCODE_LEFT])
+			movepaddle(-PADDLE_SPEED*dt);
+		if (kbstate[SDL_SCANCODE_D] || kbstate[SDL_SCANCODE_RIGHT])
+			movepaddle(PADDLE_SPEED*dt);
+#ifdef CHEATING_FEATURES
+		if (kbstate[SDL_SCANCODE_W]) {
+			// Automatically destroy all bricks
+			emptybrickstack();
+		}
+#endif // CHEATING_FEATURES
+		
+		state = moveball(dt);
 
-	moveball(dt);
+		// Set up new level in 1.5 seconds
+		if (state)
+			transitiontime = 1.5;
+		
+		
+		for (Brick *b = brickstack; b; b = b->next)
+			drawbrick(b);
+		
+		drawpaddle();
+		drawball();
+	} else if (state == 1) {
+		// Losing state
+		drawpaddle();
 
-	for (Brick *b = brickstack; b; b = b->next)
-		drawbrick(b);
+		for (Brick *b = brickstack; b; b = b->next)
+			drawbrick(b);
 
-	drawpaddle();
-	drawball();
+		transitiontime -= dt;
+		if (transitiontime <= 0) {
+			setup_level(level);
+			return 0;
+		}
+	} else if (state == 2) {\
+		// Winning state
+		drawpaddle();
+		drawball();
 
+		transitiontime -= dt;
+		if (transitiontime <= 0) {
+			setup_level(++level);
+			return 0;
+		}
+	}
+
+	// Draw Border
 	SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
 	SDL_Rect rect = { .x = 0, .y = 0, .w = GAME_WIDTH, .h = GAME_HEIGHT };
 	SDL_RenderDrawRect(ren, &rect);
-
-	return 0;
+		
+	return state;
 }
 
 void reset_paddle()
@@ -304,16 +362,12 @@ void reset_paddle()
 
 void setup_level(size_t lvl)
 {
+	dbprintf(DEBUG_GAME, "setup_level(%u)\n", lvl);
 	const Layer *level = levels[lvl % LEN(levels)];
 	reset_paddle();
 
 	// Remove preexisting bricks (if any)
-	Brick *b = brickstack;
-	while (b) {
-		Brick *tmp = b->next;
-		free(b);
-		b = tmp;
-	}
+	emptybrickstack();
 
 	// Set up bricks
 	for (int l = 0; level[l].speed > 0; l++)
@@ -362,12 +416,14 @@ void run()
 	clock_gettime(CLOCK_MONOTONIC, &tp);
 	double oldtime = (double)tp.tv_nsec / 1000000000 + tp.tv_sec;
 	double dt = 0;
+	int state = 0;
 	
 	while (1) {
 		SDL_SetRenderDrawColor(ren, BGCOLOR, SDL_ALPHA_OPAQUE);
 		SDL_RenderClear(ren);
 
-		if (tick(dt)) return;
+		state = tick(dt, state);
+		if (state < 0) return;
 
 		SDL_RenderPresent(ren);
 
@@ -384,11 +440,13 @@ void run()
 
 void cleanup()
 {
+	dbprintf(DEBUG_GAME, "cleanup()\n");
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
 	SDL_Quit();
 
 	// Free up allocated memory like a good kid
+	
 	free(ball);
 	free(paddle);
 	Brick *b = brickstack;
