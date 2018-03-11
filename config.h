@@ -25,6 +25,8 @@
 
 #define BORDER_SIZE 5
 
+#define CHEATING_FEATURES 1
+
 static const Color paddle_color = { .r = 0xee, .g = 0xee, .b = 0xee };
 static const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
 
