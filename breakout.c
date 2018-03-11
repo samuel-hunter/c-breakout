@@ -172,10 +172,8 @@ int ballcollideswith(SDL_Rect *rect)
 {
 	int bl, br, bu, bd, // ball (left, right, up, down)
 		rl, rr, ru, rd; // rect (...)
-	bl = ball->x - BALL_RADIUS;
-	br = ball->x + BALL_RADIUS;
-	bu = ball->y - BALL_RADIUS;
-	bd = ball->y + BALL_RADIUS;
+	br = (bl = ball->x) + BALL_SIZE;
+	bd = (bu = ball->y) + BALL_SIZE;
 	rr = (rl = rect->x) + rect->w;
 	rd = (ru = rect->y) + rect->h;
 
@@ -192,8 +190,8 @@ void drawball()
 {
 	SDL_SetRenderDrawColor(ren, TRUECOLOR(ball_color), SDL_ALPHA_OPAQUE);
 
-	SDL_Rect rect = { .x = ball->x - BALL_RADIUS, .y = ball->y - BALL_RADIUS,
-				 .w = BALL_RADIUS*2, .h = BALL_RADIUS*2 };
+	SDL_Rect rect = { .x = ball->x,   .y = ball->y,
+					  .w = BALL_SIZE, .h = BALL_SIZE };
 	SDL_RenderFillRect(ren, &rect);
 }
 
@@ -209,31 +207,33 @@ void moveball(double dt)
 	ball->y += ball->yvel * dt;
 
 	// Restrict ball within game
-	if (ball->x - BALL_RADIUS <= BORDER_SIZE) {
+	if (ball->x <= BORDER_SIZE) {
 		// Ball hit left of area
-		ball->x = BORDER_SIZE + BALL_RADIUS;
+		ball->x = BORDER_SIZE;
 		setballspeed(ball->speed, M_PI - ball->angle);
-	} else if (ball->x + BALL_RADIUS >= GAME_WIDTH - BORDER_SIZE) {
+	} else if (ball->x + BALL_SIZE >= GAME_WIDTH - BORDER_SIZE) {
 		// Ball hit right of area
-		ball->x = GAME_WIDTH - BORDER_SIZE - BALL_RADIUS;
+		ball->x = GAME_WIDTH - BORDER_SIZE - BALL_SIZE;
 		setballspeed(ball->speed, M_PI - ball->angle);
 	}
 
-	if (ball->y - BALL_RADIUS <= BORDER_SIZE) {
+	if (ball->y <= BORDER_SIZE) {
 		// Ball hit top of area
-		ball->y = BORDER_SIZE + BALL_RADIUS;
+		ball->y = BORDER_SIZE;
 		setballspeed(ball->speed, -ball->angle);
 	}
 
-	// Paddle collision detection
-	// Give the paddle a ludicrously large height for some edge cases
+	// Paddle collision detection; give the paddle a ludicrously
+	// large height to prevent the ball getting under
 	SDL_Rect pr = { .x = paddle->x, .y = paddle->y,
 					.w = PADDLE_WIDTH, .h = 500 };
 	if (ballcollideswith(&pr))
 		// Depending on position of paddle, change ball angle to
 		//  within [5pi/6, pi/6]
-		setballspeed(ball->speed, M_PI * (0.8333 - 0.6667 *
-										  (ball->x - paddle->x)/PADDLE_WIDTH));
+		setballspeed(ball->speed,
+					 M_PI * (0.8333 - 0.6667 *
+							 (ball->x - paddle->x + BALL_SIZE) /
+							 (PADDLE_WIDTH + BALL_SIZE)));
 
 
 	// Brick collision detection
@@ -244,22 +244,22 @@ void moveball(double dt)
 		int edge = ballcollideswith(&r);
 		switch (edge) {
 		case 1: // Top edge hits brick
-			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS + 1;
+			ball->y = b->y + BRICK_HEIGHT + 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, -ball->angle);
 			break;
 		case 2: // Bottom edge hits brick
-			ball->y = b->y - BALL_RADIUS - 1;
+			ball->y = b->y - BALL_SIZE - 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, -ball->angle);
 			break;
 		case 3: // Left edge hits brick
-			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS + 1;
+			ball->x = b->x + BRICK_WIDTH + 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, M_PI - ball->angle);
 			break;
 		case 4: // Right edge hits brick
-			ball->x = b->x - BALL_RADIUS - 1;
+			ball->x = b->x - BALL_SIZE - 1;
 			b = breakbrick(b);
 			setballspeed(ball->speed, M_PI - ball->angle);
 			break;
@@ -272,7 +272,7 @@ void moveball(double dt)
 void setballspeed(double speed, double angle)
 {
 	double xvel = speed * cos(angle);
-	// Negate, because up in math is down in computers
+	// Negate y, because up in math is down in computers
 	double yvel = speed * -sin(angle);
 
 	dbprintf(DEBUG_BALL, "\nSPD: %.2f\tANGLE: %.2f\nX: %.2f\tY: %.2f\n",
@@ -333,7 +333,7 @@ int tick(double dt, int state)
 		
 		moveball(dt);
 		
-		if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE)
+		if (ball->y + BALL_SIZE >= GAME_HEIGHT - BORDER_SIZE)
 			state = 1;
 		else if (brickstack == NULL)
 			state = 2;
@@ -387,8 +387,8 @@ void reset_paddle()
 	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - BORDER_SIZE;
 
 	// Setup ball
-	ball->x = paddle->x + PADDLE_WIDTH/2;
-	ball->y = paddle->y - BALL_RADIUS - 3;
+	ball->x = paddle->x + PADDLE_WIDTH/2 - BALL_SIZE/2;
+	ball->y = paddle->y - BALL_SIZE - 3;
 	ball->speed = ball->angle = ball->xvel = ball->yvel = 0;
 }
 
@@ -481,12 +481,7 @@ void cleanup()
 	
 	free(ball);
 	free(paddle);
-	Brick *b = brickstack;
-	while (b) {
-		Brick *next = b->next;
-		free(b);
-		b = next;
-	}
+	emptybrickstack();
 }
 
 int main(int argc, char **argv)
