@@ -21,7 +21,7 @@
 
 #define BALL_RADIUS       10
 #define BALL_SPEED_START 300
-#define BALL_ANGLE_START (M_PI * 1.6667)
+#define BALL_ANGLE_START (M_PI * 0.3333)
 
 #define BORDER_SIZE 5
 
