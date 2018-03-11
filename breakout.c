@@ -58,7 +58,7 @@ static void moveball();
 static void setballspeed(double, double);
 static int tick(double);
 static void reset_paddle();
-static void setup_level(const Layer*);
+static void setup_level(size_t);
 static void setup();
 static void run();
 static void cleanup();
@@ -68,6 +68,7 @@ static SDL_Renderer *ren = NULL;
 static Brick *brickstack = NULL;
 static Paddle *paddle = NULL;
 static Ball *ball = NULL;
+static size_t level = 0;
 
 
 Brick *newbrick(const Layer *layer, int x, int y)
@@ -132,6 +133,10 @@ Brick *breakbrick(Brick *brick)
 
 		ball->xvel = xdir * ABS(ball->xvel);
 		ball->yvel = ydir * ABS(ball->yvel);
+	}
+
+	if (!brickstack) {
+		setup_level(++level);
 	}
 	
 	return temp;
@@ -293,12 +298,13 @@ void reset_paddle()
 
 	// Setup ball
 	ball->x = paddle->x + PADDLE_WIDTH/2;
-	ball->y = paddle->y - BALL_RADIUS;
+	ball->y = paddle->y - BALL_RADIUS - 3;
 	ball->speed = ball->angle = ball->xvel = ball->yvel = 0;
 }
 
-void setup_level(const Layer *level)
+void setup_level(size_t lvl)
 {
+	const Layer *level = levels[lvl % LEN(levels)];
 	reset_paddle();
 
 	// Remove preexisting bricks (if any)
@@ -347,7 +353,7 @@ void setup()
 
 	paddle = ecalloc(1, sizeof(Paddle));
 	ball = ecalloc(1, sizeof(Ball));
-	setup_level(game_level);
+	setup_level(level);
 }
 
 void run()
