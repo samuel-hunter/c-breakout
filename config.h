@@ -19,7 +19,7 @@
 #define PADDLE_HEIGHT 20
 #define PADDLE_SPEED 300
 
-#define BALL_RADIUS       10
+#define BALL_SIZE         20
 #define BALL_SPEED_START 300
 #define BALL_ANGLE_START (M_PI * 0.3333)
 
