@@ -182,10 +182,22 @@ int ballcollideswith(SDL_Rect *rect)
 	rr = (rl = rect->x) + rect->w;
 	rd = (ru = rect->y) + rect->h;
 
-	if (WITHIN(bu, ru, rd) && br >= rl && bl <= rr) return 1;
-	if (WITHIN(bl, rl, rr) && bd >= ru && bu <= rd) return 3;
-	if (WITHIN(br, rl, rr) && bd >= ru && bu <= rd) return 4;
-	if (WITHIN(bd, ru, rd) && br >= rl && bl <= rr) return 2;
+	
+	int xdiff = MIN(br, rr) - MAX(bl, rl),
+		ydiff = MIN(bd, rd) - MAX(bu, ru);
+
+	if (xdiff > 0 && ydiff > 0)
+		dbprintf(DEBUG_BALL, "\nxdiff: %d\tydiff: %d\n", xdiff, ydiff);
+	
+
+	if (WITHIN(bu, ru, rd) && br >= rl && bl <= rr && xdiff >= ydiff)
+		return 1;
+	if (WITHIN(bl, rl, rr) && bd >= ru && bu <= rd && ydiff >= xdiff)
+		return 3;
+	if (WITHIN(br, rl, rr) && bd >= ru && bu <= rd && ydiff >= xdiff)
+		return 4;
+	if (WITHIN(bd, ru, rd) && br >= rl && bl <= rr && xdiff >= ydiff)
+		return 2;
 
 	return 0;
 }
