@@ -4,6 +4,8 @@
 #define GAME_NAME "Breakout"
 
 #define BGCOLOR 0, 0, 0
+#define PADDLE_COLOR 0xee, 0xee, 0xee
+#define BALL_COLOR 0xff, 0xff, 0xff
 
 #define GAME_WIDTH  800
 #define GAME_HEIGHT 600
@@ -13,7 +15,7 @@
 #define BRICK_HEIGHT    20
 #define BRICK_WGAP      10
 #define BRICK_HGAP       5
-#define BRICK_Y_OFFSET  ((BRICK_HEIGHT + BRICK_HGAP)*2)
+#define BRICK_Y_OFFSET  ((BRICK_HEIGHT + BRICK_HGAP)*2 + BRICK_HGAP)
 
 #define PADDLE_WIDTH 100
 #define PADDLE_HEIGHT 20
@@ -26,10 +28,6 @@
 #define BORDER_SIZE 5
 
 #define CHEATING_FEATURES 1
-
-static const Color paddle_color = { .r = 0xee, .g = 0xee, .b = 0xee };
-static const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
-
 
 static const Layer levels[][16] = {
 	{
