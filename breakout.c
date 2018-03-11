@@ -54,8 +54,9 @@ static Brick *breakbrick(Brick*);
 static void emptybrickstack();
 static void drawpaddle();
 static void movepaddle(double);
+static int ballcollideswith(SDL_Rect*);
 static void drawball();
-static int moveball();
+static void moveball();
 static void setballspeed(double, double);
 static int tick(double, int);
 static void reset_paddle();
@@ -125,19 +126,8 @@ Brick *breakbrick(Brick *brick)
 	temp = temp->next;
 	
  finish:
-
-	if (ball->speed < speed) {
-		int xdir = SIGNUM(ball->xvel);
-		int ydir = SIGNUM(ball->yvel);
+	if (ball->speed < speed)
 		setballspeed(speed, ball->angle);
-
-		ball->xvel = xdir * ABS(ball->xvel);
-		ball->yvel = ydir * ABS(ball->yvel);
-	}
-
-	if (!brickstack) {
-		setup_level(++level);
-	}
 	
 	return temp;
 }
@@ -170,6 +160,29 @@ void movepaddle(double dist)
 		setballspeed(BALL_SPEED_START, BALL_ANGLE_START);
 }
 
+/*
+ * Returns:
+ *   0 if no collision
+ *   1 if top of ball collides
+ *   2 if bottom of ball collides
+ *   3 if left of ball collides
+ *   4 if right of ball collides
+ */
+int ballcollideswith(SDL_Rect *rect)
+{
+	if (WITHIN(ball->y - BALL_RADIUS, rect->y, rect->y + rect->h) &&
+		WITHIN(ball->x, rect->x, rect->x + rect->w)) return 1;
+	if (WITHIN(ball->y + BALL_RADIUS, rect->y, rect->y + rect->h) &&
+		WITHIN(ball->x, rect->x, rect->x + rect->w)) return 2;
+
+	if (WITHIN(ball->x - BALL_RADIUS, rect->x, rect->x + rect->w) &&
+		WITHIN(ball->y, rect->y, rect->y + rect->h)) return 3;
+	if (WITHIN(ball->x + BALL_RADIUS, rect->x, rect->x + rect->w) &&
+		WITHIN(ball->y, rect->y, rect->y + rect->h)) return 4;
+
+	return 0;
+}
+
 void drawball()
 {
 	SDL_SetRenderDrawColor(ren, TRUECOLOR(ball_color), SDL_ALPHA_OPAQUE);
@@ -185,7 +198,7 @@ void drawball()
  *   2 if ball breaks last brick.
  *   0 otherwise.
  */
-int moveball(double dt)
+void moveball(double dt)
 {
 	ball->x += ball->xvel * dt;
 	ball->y += ball->yvel * dt;
@@ -205,59 +218,50 @@ int moveball(double dt)
 		// Ball hit top of area
 		ball->y = BORDER_SIZE + BALL_RADIUS;
 		setballspeed(ball->speed, -ball->angle);
-	} else if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE) {
-		// Ball hit bottom
-		return 1;
 	}
 
 	// Paddle collision detection
-	if (WITHIN(ball->x, paddle->x, paddle->x + PADDLE_WIDTH) &&
-		ball->y + BALL_RADIUS > paddle->y) {
+	// Give the paddle a ludicrously large height for some edge cases
+	SDL_Rect pr = { .x = paddle->x, .y = paddle->y,
+					.w = PADDLE_WIDTH, .h = 500 };
+	if (ballcollideswith(&pr))
 		// Depending on position of paddle, change ball angle to
 		//  within [5pi/6, pi/6]
-		setballspeed(ball->speed,
-					 M_PI * (0.8333 - 0.6667 * (ball->x - paddle->x)/PADDLE_WIDTH));
-	}
+		setballspeed(ball->speed, M_PI * (0.8333 - 0.6667 *
+										  (ball->x - paddle->x)/PADDLE_WIDTH));
 
 
 	// Brick collision detection
 	Brick *b = brickstack;
 	while (b) {
-		if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
-			WITHIN(ball->y - BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
-			// Top of ball hit brick
+		SDL_Rect r = { .x = b->x, .y = b->y,
+					   .w = BRICK_WIDTH, .h = BRICK_HEIGHT };
+		int edge = ballcollideswith(&r);
+		switch (edge) {
+		case 1: // Top edge hits brick
 			ball->y = b->y + BRICK_HEIGHT + BALL_RADIUS;
 			b = breakbrick(b);
 			setballspeed(ball->speed, -ball->angle);
-			continue;
-		} else if (WITHIN(ball->x, b->x, b->x + BRICK_WIDTH) &&
-				   WITHIN(ball->y + BALL_RADIUS, b->y, b->y + BRICK_HEIGHT)) {
-			// Bottom of ball hit brick
+			break;
+		case 2: // Bottom edge hits brick
 			ball->y = b->y - BALL_RADIUS;
 			b = breakbrick(b);
 			setballspeed(ball->speed, -ball->angle);
-			continue;
-		} else if (WITHIN(ball->x - BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
-				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
-			// Left of ball hit brick
+			break;
+		case 3: // Left edge hits brick
 			ball->x = b->x + BRICK_WIDTH + BALL_RADIUS;
 			b = breakbrick(b);
 			setballspeed(ball->speed, M_PI - ball->angle);
-			continue;
-		} else if (WITHIN(ball->x + BALL_RADIUS, b->x, b->x + BRICK_WIDTH) &&
-				   WITHIN(ball->y, b->y, b->y + BRICK_HEIGHT)) {
-			// Right of ball hit brick
+			break;
+		case 4: // Right edge hits brick
 			ball->x = b->x - BALL_RADIUS;
 			b = breakbrick(b);
 			setballspeed(ball->speed, M_PI - ball->angle);
-			continue;
+			break;
+		default: // No collision
+			b = b->next;
 		}
-
-		b = b->next;
 	}
-	if (!brickstack) return 2;
-
-	return 0;
 }
 
 void setballspeed(double speed, double angle)
@@ -266,7 +270,6 @@ void setballspeed(double speed, double angle)
 	// Negate, because up in math is down in computers
 	double yvel = speed * -sin(angle);
 
-	dbprintf(DEBUG_BALL, "%.2f -> %.2f\n", ball->angle, angle);
 	dbprintf(DEBUG_BALL, "\nSPD: %.2f\tANGLE: %.2f\nX: %.2f\tY: %.2f\n",
 			 speed, angle, xvel, yvel);
 
@@ -313,7 +316,12 @@ int tick(double dt, int state)
 		}
 #endif // CHEATING_FEATURES
 		
-		state = moveball(dt);
+		moveball(dt);
+		
+		if (ball->y + BALL_RADIUS >= GAME_HEIGHT - BORDER_SIZE)
+			state = 1;
+		else if (brickstack == NULL)
+			state = 2;
 
 		// Set up new level in 1.5 seconds
 		if (state)
@@ -337,7 +345,7 @@ int tick(double dt, int state)
 			setup_level(level);
 			return 0;
 		}
-	} else if (state == 2) {\
+	} else if (state == 2) {
 		// Winning state
 		drawpaddle();
 		drawball();
