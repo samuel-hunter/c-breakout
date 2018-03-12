@@ -17,7 +17,7 @@ typedef struct Color {
 } Color;
 
 typedef struct Layer {
-	double speed;
+	int speed;
 	Color color;
 } Layer;
 
@@ -69,7 +69,8 @@ static SDL_Renderer *ren = NULL;
 static Brick *brickstack = NULL;
 static Paddle *paddle = NULL;
 static Ball *ball = NULL;
-static size_t level = 0;
+static size_t level = 0; // size_t because it accesses an array
+static unsigned int lives = STARTING_LIVES;
 
 void makebrick(const Layer *layer, int x, int y)
 {
@@ -373,7 +374,15 @@ int tick(double dt, int state)
 
 		transitiontime -= dt;
 		if (transitiontime <= 0) {
-			setuplevel(level);
+			--lives;
+			if (lives) {
+				resetpaddle();
+			} else {
+				lives = STARTING_LIVES;
+				level = 0;
+				setuplevel(level);
+			}
+			
 			return 0;
 		}
 	} else if (state == 2) {
@@ -384,6 +393,8 @@ int tick(double dt, int state)
 		transitiontime -= dt;
 		if (transitiontime <= 0) {
 			setuplevel(++level);
+			if (level % 5 == 0)
+				++lives;
 			return 0;
 		}
 	}

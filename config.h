@@ -34,6 +34,8 @@
 //  need conveniences to debug their programs.
 #define CHEATING_FEATURES 1
 
+#define STARTING_LIVES 3
+
 // Each Layer[] is a level. Each Layer of bricks contains
 //  its color and the speed it makes the ball go.
 static const Layer levels[][16] = {
