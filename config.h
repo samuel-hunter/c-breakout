@@ -42,17 +42,26 @@ static const SDL_Rect game_area =
 
 // Each Layer[] is a level. Each Layer of bricks contains
 //  its color and the speed it makes the ball go.
-static const Layer levels[][16] = {
+// {0}'s signify empty layers
+#define LEVEL_LAYERS 16
+static const Layer levels[][LEVEL_LAYERS] = {
 	{
+		{0},
+		{0},
+		{0},
+		{0},
 		{  400, { .r = 0xff, .g = 0xff, .b = 0xff } },
 		{  400, { .r = 0xff, .g = 0xff, .b = 0xff } },
 		{  350, { .r = 0xcc, .g = 0xcc, .b = 0xcc } },
 		{  350, { .r = 0xcc, .g = 0xcc, .b = 0xcc } },
 		{  300, { .r = 0x88, .g = 0x88, .b = 0x88 } },
-		{  300, { .r = 0x88, .g = 0x88, .b = 0x88 } },
-		{0}
+		{  300, { .r = 0x88, .g = 0x88, .b = 0x88 } }
 	},
 	{
+		{0},
+		{0},
+		{0},
+		{0},
 		{  475, { .r = 0xff, .g = 0x00, .b = 0x00 } },
 		{  475, { .r = 0xff, .g = 0x00, .b = 0x00 } },
 		{  450, { .r = 0xff, .g = 0xff, .b = 0x00 } },
@@ -60,10 +69,11 @@ static const Layer levels[][16] = {
 		{  400, { .r = 0x00, .g = 0xff, .b = 0x00 } },
 		{  350, { .r = 0x00, .g = 0xff, .b = 0xff } },
 		{  300, { .r = 0x00, .g = 0x00, .b = 0xff } },
-		{  300, { .r = 0x00, .g = 0x00, .b = 0xff } },
-		{0}
+		{  300, { .r = 0x00, .g = 0x00, .b = 0xff } }
 	},	
 	{
+		{0},
+		{0},
 		{  500, { .r = 0xff, .g = 0x00, .b = 0xff } },
 		{  500, { .r = 0xff, .g = 0x00, .b = 0xff } },
 		{  475, { .r = 0xff, .g = 0x00, .b = 0x00 } },
@@ -73,8 +83,7 @@ static const Layer levels[][16] = {
 		{  400, { .r = 0x00, .g = 0xff, .b = 0x00 } },
 		{  350, { .r = 0x00, .g = 0xff, .b = 0xff } },
 		{  300, { .r = 0x00, .g = 0x00, .b = 0xff } },
-		{  300, { .r = 0x00, .g = 0x00, .b = 0xff } },
-		{0}
+		{  300, { .r = 0x00, .g = 0x00, .b = 0xff } }
 	}
 };
 
