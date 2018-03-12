@@ -1,5 +1,10 @@
 # BREAKOUT
 
+I got back into hacking around with C while my classmates were
+learning how to make breakout in JavaScript, so I decided to give this
+a shot. My goal is to make the entire thing in less than 1,000 LOC and
+only rely on SDL2.
+
 ## Directions
 
 `A`,`D` and left/right arrow keys controls the paddle. `Q` quits the game.
