@@ -6,8 +6,8 @@
 // These are three arguments because it's easier to insert them into
 //  SDL_SetRenderDrawColor.
 #define BGCOLOR 0, 0, 0
-#define PADDLE_COLOR 0xee, 0xee, 0xee
-#define BALL_COLOR 0xff, 0xff, 0xff
+const Color paddle_color = { .r = 0xee, .g = 0xee, .b = 0xee };
+const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
 
 #define GAME_WIDTH  800
 #define GAME_HEIGHT 600

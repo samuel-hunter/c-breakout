@@ -7,13 +7,11 @@
 #include "util.h"
 
 
-// Quick macro to put in colorin SDL_SetRenderDrawColor
-#define TRUECOLOR(color) color.r, color.g, color.b
+// Quick macro to put color in SDL_SetRenderDrawColor
+#define TRUECOLOR(color) color->r, color->g, color->b
 
 typedef struct Color {
-	unsigned short r;
-	unsigned short g;
-	unsigned short b;
+	unsigned short r, g, b;
 } Color;
 
 typedef struct Layer {
@@ -21,41 +19,32 @@ typedef struct Layer {
 	Color color;
 } Layer;
 
+typedef struct Sprite {
+	double x, y;
+} Sprite;
+
 typedef struct Brick {
-	int x;
-	int y;
+	double x, y;
 	const Layer *layer;
 	struct Brick *next;
 } Brick;
 
-typedef struct Paddle {
-	double x;
-	double y;
-} Paddle;
-
 typedef struct Ball {
-	double x;
-	double y;
-
-	double speed;
-	double angle;
-	
-	double xvel;
-	double yvel;
+	double x, y;
+	double speed, angle;
+	double xvel, yvel;
 } Ball;
 
 
 #include "config.h"
 
+static void drawsprite(const Sprite*, int, int, const Color*);
 static void   makebrick(const Layer*, int, int);
-static void   drawbrick(Brick*);
 static Brick *breakbrick(Brick*);
 static void   emptybrickstack();
-static void drawpaddle();
 static void movepaddle(double);
 static void resetpaddle();
 static int  ballcollideswith(SDL_Rect*);
-static void drawball();
 static void moveball();
 static void setballspeed(double, double);
 static int  tick(double, int);
@@ -67,27 +56,25 @@ static void cleanup();
 static SDL_Window *win = NULL;
 static SDL_Renderer *ren = NULL;
 static Brick *brickstack = NULL;
-static Paddle *paddle = NULL;
+static Sprite *paddle = NULL;
 static Ball *ball = NULL;
 static size_t level = 0; // size_t because it accesses an array
 static unsigned int lives = STARTING_LIVES;
+
+
+void drawsprite(const Sprite *s, int w, int h, const Color *color)
+{
+	SDL_SetRenderDrawColor(ren, TRUECOLOR(color), SDL_ALPHA_OPAQUE);
+	SDL_Rect rect = { .x = s->x + game_area.x, .y = s->y + game_area.y,
+					  .w = w, .h = h };
+	SDL_RenderFillRect(ren, &rect);
+}
 
 void makebrick(const Layer *layer, int x, int y)
 {
 	Brick *b = ecalloc(1, sizeof(Brick));
 	*b = (Brick){ .x = x, .y = y, .layer = layer, .next = brickstack };
 	brickstack = b;
-}
-
-void drawbrick(Brick *brick)
-{
-	SDL_SetRenderDrawColor(ren, TRUECOLOR(brick->layer->color),
-						   SDL_ALPHA_OPAQUE);
-
-	SDL_Rect rect = { .x = brick->x + game_area.x,
-					  .y = brick->y + game_area.y,
-					  .w = BRICK_WIDTH, .h = BRICK_HEIGHT };
-	SDL_RenderFillRect(ren, &rect);
 }
 
 /*
@@ -113,8 +100,7 @@ Brick *breakbrick(Brick *brick)
 		return NULL; // Do nothing if brick not found
 	}
 
-	dbprintf(DEBUG_BRICK, "Stitching brick %p to %p (removing %p)\n",
-			 temp, brick->next, brick);
+	// Stitch out brick from list linking
 	temp->next = brick->next;
 	free(brick);
 	
@@ -134,16 +120,6 @@ void emptybrickstack()
 		free(brickstack);
 		brickstack = tmp;
 	}
-}
-
-void drawpaddle()
-{
-	SDL_SetRenderDrawColor(ren, PADDLE_COLOR,
-						   SDL_ALPHA_OPAQUE);
-	SDL_Rect rect = { .x = paddle->x + game_area.x,
-					  .y = paddle->y + game_area.y,
-					  .w = PADDLE_WIDTH, .h = PADDLE_HEIGHT };
-	SDL_RenderFillRect(ren, &rect);
 }
 
 void movepaddle(double dist)
@@ -203,15 +179,6 @@ int ballcollideswith(SDL_Rect *rect)
 		return 2;
 
 	return 0;
-}
-
-void drawball()
-{
-	SDL_SetRenderDrawColor(ren, BALL_COLOR, SDL_ALPHA_OPAQUE);
-
-	SDL_Rect rect = { .x = ball->x + game_area.x, .y = ball->y + game_area.y,
-					  .w = BALL_SIZE, .h = BALL_SIZE };
-	SDL_RenderFillRect(ren, &rect);
 }
 
 /*
@@ -361,18 +328,12 @@ int tick(double dt, int state)
 		if (state)
 			transitiontime = 1.5;
 		
-		
-		for (Brick *b = brickstack; b; b = b->next)
-			drawbrick(b);
-		
-		drawpaddle();
-		drawball();
+
+		drawsprite(paddle, PADDLE_WIDTH, PADDLE_HEIGHT, &paddle_color);
+		drawsprite((Sprite*)ball, BALL_SIZE, BALL_SIZE, &ball_color);
 	} else if (state == 1) {
 		// Losing state
-		drawpaddle();
-
-		for (Brick *b = brickstack; b; b = b->next)
-			drawbrick(b);
+		drawsprite(paddle, PADDLE_WIDTH, PADDLE_HEIGHT, &paddle_color);
 
 		transitiontime -= dt;
 		if (transitiontime <= 0) {
@@ -389,8 +350,8 @@ int tick(double dt, int state)
 		}
 	} else if (state == 2) {
 		// Winning state
-		drawpaddle();
-		drawball();
+		drawsprite((Sprite*)paddle, PADDLE_WIDTH, PADDLE_HEIGHT, &paddle_color);
+		drawsprite((Sprite*)ball, BALL_SIZE, BALL_SIZE, &ball_color);
 
 		transitiontime -= dt;
 		if (transitiontime <= 0) {
@@ -400,6 +361,10 @@ int tick(double dt, int state)
 			return 0;
 		}
 	}
+
+	for (Brick *b = brickstack; b; b = b->next)
+		drawsprite((Sprite*)b, BRICK_WIDTH, BRICK_HEIGHT,
+				   &b->layer->color);
 
 	// Draw Border
 	SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
@@ -413,9 +378,8 @@ void setuplevel(size_t lvl)
 {
 	dbprintf(DEBUG_GAME, "setuplevel(%u)\n", lvl);
 	const Layer *level = levels[lvl % LEN(levels)];
+	
 	resetpaddle();
-
-	// Remove preexisting bricks (if any)
 	emptybrickstack();
 
 	// Set up bricks
@@ -455,9 +419,9 @@ void setup()
 		SDL_Quit();
 		die("SDL_CreateRenderer: %s\n", SDL_GetError());
 	}
-
-	paddle = ecalloc(1, sizeof(Paddle));
-	ball = ecalloc(1, sizeof(Ball));
+	
+	paddle = ecalloc(1, sizeof(Sprite));
+	ball   = ecalloc(1, sizeof(Ball));
 	setuplevel(level);
 }
 
