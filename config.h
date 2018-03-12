@@ -3,6 +3,8 @@
 
 #define GAME_NAME "Breakout"
 
+// These are three arguments because it's easier to insert them into
+//  SDL_SetRenderDrawColor.
 #define BGCOLOR 0, 0, 0
 #define PADDLE_COLOR 0xee, 0xee, 0xee
 #define BALL_COLOR 0xff, 0xff, 0xff
@@ -23,12 +25,17 @@
 
 #define BALL_SIZE         20
 #define BALL_SPEED_START 300
-#define BALL_ANGLE_START (M_PI * 0.3333)
+#define BALL_ANGLE_START (M_PI * 0.3333) // 60°
 
+// Invisible border that the ball and paddle respects.
 #define BORDER_SIZE 5
 
+// Comment this out if you're a real gamer, because real gamers don't
+//  need conveniences to debug their programs.
 #define CHEATING_FEATURES 1
 
+// Each Layer[] is a level. Each Layer of bricks contains
+//  its color and the speed it makes the ball go.
 static const Layer levels[][16] = {
 	{
 		{  400, { .r = 0xff, .g = 0xff, .b = 0xff } },
@@ -51,6 +58,7 @@ static const Layer levels[][16] = {
 		{0}
 	},	
 	{
+		{  500, { .r = 0xff, .g = 0x00, .b = 0xff } },
 		{  500, { .r = 0xff, .g = 0x00, .b = 0xff } },
 		{  475, { .r = 0xff, .g = 0x00, .b = 0x00 } },
 		{  475, { .r = 0xff, .g = 0x00, .b = 0x00 } },
