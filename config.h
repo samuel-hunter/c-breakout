@@ -13,11 +13,11 @@
 #define GAME_HEIGHT 600
 
 #define NUM_BRICKS      10
-#define BRICK_WIDTH     69
+#define BRICK_WIDTH     70
 #define BRICK_HEIGHT    20
 #define BRICK_WGAP      10
 #define BRICK_HGAP       5
-#define BRICK_Y_OFFSET  ((BRICK_HEIGHT + BRICK_HGAP)*2 + BRICK_HGAP)
+#define BRICK_Y_OFFSET  ((BRICK_HEIGHT + BRICK_HGAP)*3)
 
 #define PADDLE_WIDTH 100
 #define PADDLE_HEIGHT 20
@@ -35,6 +35,10 @@
 #define CHEATING_FEATURES 1
 
 #define STARTING_LIVES 3
+
+static const SDL_Rect game_area =
+	{ .x = BORDER_SIZE, .y = BORDER_SIZE,
+	  .w = GAME_WIDTH - BORDER_SIZE*2, .h = GAME_HEIGHT - BORDER_SIZE*2 };
 
 // Each Layer[] is a level. Each Layer of bricks contains
 //  its color and the speed it makes the ball go.
