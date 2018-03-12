@@ -419,10 +419,12 @@ void setuplevel(size_t lvl)
 	emptybrickstack();
 
 	// Set up bricks
-	for (int l = 0; level[l].speed > 0; l++)
+	for (int l = 0; l < LEVEL_LAYERS; l++) {
+		if (!(level[l].speed)) continue; // Size of 0 signify an empty layer
 		for (int i = 0; i < NUM_BRICKS; i++)
 			makebrick(level+l, i*(BRICK_WIDTH + BRICK_WGAP),
-					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_Y_OFFSET);
+					  l*(BRICK_HEIGHT + BRICK_HGAP));
+	}
 }
 
 /*
