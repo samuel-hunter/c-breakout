@@ -9,7 +9,7 @@ only rely on SDL2.
 
 `A`,`D` and left/right arrow keys controls the paddle. `Q` quits the game.
 
-If cheating is enabled (check `config.h`), `B` will position the ball
+If cheating is enabled (check `config.h`), clicking will position the ball
 to the mouse pointer, and `W` simulates winning the game.
 
 ## Compiling and Installing

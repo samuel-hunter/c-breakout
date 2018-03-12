@@ -314,24 +314,24 @@ int tick(double dt, int state)
 	while (SDL_PollEvent(&event)) {
 		if (event.type == SDL_QUIT)
 				return -1;
-		if (event.type == SDL_KEYDOWN && !event.key.repeat) {
-			int x, y;
-			
+		else if (event.type == SDL_KEYDOWN && !event.key.repeat) {
 			switch (event.key.keysym.scancode) {
 			case SDL_SCANCODE_ESCAPE:
 			case SDL_SCANCODE_Q:
 				return -1;
-#ifdef CHEATING_FEATURES
-			case SDL_SCANCODE_B:
-				SDL_GetMouseState(&x, &y);
-				ball->x = x;
-				ball->y = y;
-				break;
-#endif // CHEATING_FEATURES
 			default:
 				break;
 			}
+#ifdef CHEATING_FEATURES			
+		} else if (event.type == SDL_MOUSEBUTTONDOWN) {
+			int x, y;
+			SDL_GetMouseState(&x, &y);
+			ball->x = x;
+			ball->y = y;
+#endif
 		}
+		
+
 	}
 
 	if (state == 0) {
