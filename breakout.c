@@ -84,7 +84,8 @@ void drawbrick(Brick *brick)
 	SDL_SetRenderDrawColor(ren, TRUECOLOR(brick->layer->color),
 						   SDL_ALPHA_OPAQUE);
 
-	SDL_Rect rect = { .x = brick->x, .y = brick->y,
+	SDL_Rect rect = { .x = brick->x + game_area.x,
+					  .y = brick->y + game_area.y,
 					  .w = BRICK_WIDTH, .h = BRICK_HEIGHT };
 	SDL_RenderFillRect(ren, &rect);
 }
@@ -139,7 +140,8 @@ void drawpaddle()
 {
 	SDL_SetRenderDrawColor(ren, PADDLE_COLOR,
 						   SDL_ALPHA_OPAQUE);
-	SDL_Rect rect = { .x = (int)paddle->x, .y = (int)paddle->y,
+	SDL_Rect rect = { .x = paddle->x + game_area.x,
+					  .y = paddle->y + game_area.y,
 					  .w = PADDLE_WIDTH, .h = PADDLE_HEIGHT };
 	SDL_RenderFillRect(ren, &rect);
 }
@@ -147,8 +149,8 @@ void drawpaddle()
 void movepaddle(double dist)
 {
 	paddle->x += dist;
-	paddle->x = CLAMP(paddle->x, BORDER_SIZE,
-					  GAME_WIDTH-PADDLE_WIDTH-BORDER_SIZE);
+	paddle->x = CLAMP(paddle->x, 0,
+					  game_area.w-PADDLE_WIDTH);
 
 	if (!ball->speed)
 		setballspeed(BALL_SPEED_START, BALL_ANGLE_START);
@@ -157,8 +159,8 @@ void movepaddle(double dist)
 void resetpaddle()
 {
 	// Setup paddle
-	paddle->x = (GAME_WIDTH - PADDLE_WIDTH) / 2;
-	paddle->y = GAME_HEIGHT - PADDLE_HEIGHT - BORDER_SIZE;
+	paddle->x = (game_area.w - PADDLE_WIDTH) / 2;
+	paddle->y = game_area.h - PADDLE_HEIGHT;
 
 	// Setup ball
 	ball->x = paddle->x + PADDLE_WIDTH/2 - BALL_SIZE/2;
@@ -207,7 +209,7 @@ void drawball()
 {
 	SDL_SetRenderDrawColor(ren, BALL_COLOR, SDL_ALPHA_OPAQUE);
 
-	SDL_Rect rect = { .x = ball->x,   .y = ball->y,
+	SDL_Rect rect = { .x = ball->x + game_area.x, .y = ball->y + game_area.y,
 					  .w = BALL_SIZE, .h = BALL_SIZE };
 	SDL_RenderFillRect(ren, &rect);
 }
@@ -224,19 +226,19 @@ void moveball(double dt)
 	ball->y += ball->yvel * dt;
 
 	// Restrict ball within game
-	if (ball->x <= BORDER_SIZE) {
+	if (ball->x <= 0) {
 		// Ball hit left of area
-		ball->x = BORDER_SIZE;
+		ball->x = 0;
 		setballspeed(ball->speed, M_PI - ball->angle);
-	} else if (ball->x + BALL_SIZE >= GAME_WIDTH - BORDER_SIZE) {
+	} else if (ball->x + BALL_SIZE >= game_area.w) {
 		// Ball hit right of area
-		ball->x = GAME_WIDTH - BORDER_SIZE - BALL_SIZE;
+		ball->x = game_area.w - BALL_SIZE;
 		setballspeed(ball->speed, M_PI - ball->angle);
 	}
 
-	if (ball->y <= BORDER_SIZE) {
+	if (ball->y <= 0) {
 		// Ball hit top of area
-		ball->y = BORDER_SIZE;
+		ball->y = 0;
 		setballspeed(ball->speed, -ball->angle);
 	}
 
@@ -326,8 +328,8 @@ int tick(double dt, int state)
 		} else if (event.type == SDL_MOUSEBUTTONDOWN) {
 			int x, y;
 			SDL_GetMouseState(&x, &y);
-			ball->x = x;
-			ball->y = y;
+			ball->x = x - game_area.x - BALL_SIZE/2;
+			ball->y = y - game_area.y - BALL_SIZE/2;
 #endif
 		}
 		
@@ -350,7 +352,7 @@ int tick(double dt, int state)
 		
 		moveball(dt);
 		
-		if (ball->y + BALL_SIZE >= GAME_HEIGHT - BORDER_SIZE)
+		if (ball->y + BALL_SIZE >= game_area.h)
 			state = 1;
 		else if (brickstack == NULL)
 			state = 2;
@@ -419,7 +421,7 @@ void setuplevel(size_t lvl)
 	// Set up bricks
 	for (int l = 0; level[l].speed > 0; l++)
 		for (int i = 0; i < NUM_BRICKS; i++)
-			makebrick(level+l, i*(BRICK_WIDTH + BRICK_WGAP) + BRICK_WGAP,
+			makebrick(level+l, i*(BRICK_WIDTH + BRICK_WGAP),
 					 l*(BRICK_HEIGHT + BRICK_HGAP) + BRICK_Y_OFFSET);
 }
 
