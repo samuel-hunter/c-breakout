@@ -47,19 +47,25 @@ static void resetpaddle();
 static int  ballcollideswith(SDL_Rect*);
 static void moveball();
 static void setballspeed(double, double);
+static void drawtext(const char*, int, int);
 static int  tick(double, int);
 static void setuplevel(size_t);
 static void setup();
 static void run();
 static void cleanup();
 
+// SDL
 static SDL_Window *win = NULL;
 static SDL_Renderer *ren = NULL;
+static TTF_Font *hudfont = NULL;
+
+// Game
 static Brick *brickstack = NULL;
 static Sprite *paddle = NULL;
 static Ball *ball = NULL;
 static size_t level = 0; // size_t because it accesses an array
 static unsigned int lives = STARTING_LIVES;
+static unsigned int score = 0;
 
 
 void drawsprite(const Sprite *s, int w, int h, const Color *color)
@@ -83,6 +89,7 @@ void makebrick(const Layer *layer, int x, int y)
 Brick *breakbrick(Brick *brick)
 {
 	Brick *temp = NULL;
+    double points = brick->layer->speed;
 	double speed = brick->layer->speed;
 	
 	if (brick == brickstack) {
@@ -107,6 +114,7 @@ Brick *breakbrick(Brick *brick)
 	temp = temp->next;
 	
  finish:
+    score += points;
 	if (ball->speed < speed)
 		setballspeed(speed, ball->angle);
 	
@@ -270,6 +278,18 @@ void setballspeed(double speed, double angle)
 	ball->angle = angle;
 }
 
+void drawtext(const char *string, int x, int y)
+{
+	SDL_Surface *surf = TTF_RenderText_Solid(hudfont, string, hud_color);
+	SDL_Texture *txt  = SDL_CreateTextureFromSurface(ren, surf);
+    SDL_Rect rect = { .x = x, .y = y};
+    SDL_QueryTexture(txt, NULL, NULL, &rect.w, &rect.h);
+	SDL_RenderCopy(ren, txt, NULL, &rect);
+
+    SDL_DestroyTexture(txt);
+    SDL_FreeSurface(surf);
+}
+
 /*
  * Return a negative value to stop the game.
  * Any other number will be passed down to `state`.
@@ -343,6 +363,7 @@ int tick(double dt, int state)
 			} else {
 				lives = STARTING_LIVES;
 				level = 0;
+                score = 0;
 				setuplevel(level);
 			}
 			
@@ -366,9 +387,28 @@ int tick(double dt, int state)
 		drawsprite((Sprite*)b, BRICK_WIDTH, BRICK_HEIGHT,
 				   &b->layer->color);
 
+    // Draw aesthetics
+    SDL_Rect rect; // for drawing rects
+    const int hud_y =  BORDER_SIZE;
+    SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
+
+    // Score
+    char *scorestr = ecalloc(1, 100);
+    snprintf(scorestr, 100, "1UP %010u      LVL %02zu", score, level+1);
+    drawtext(scorestr, game_area.x, hud_y + BORDER_SIZE);
+
+    // Lives
+    rect.w = rect.h = BALL_SIZE;
+    rect.y = hud_y;
+    rect.x = GAME_WIDTH;
+    for (int i = 0; i < lives; i++) {
+        rect.x -= BALL_SIZE + BORDER_SIZE;
+        SDL_RenderFillRect(ren, &rect);
+    }
+
 	// Draw Border
-	SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE);
-	SDL_Rect rect = { .x = 0, .y = 0, .w = GAME_WIDTH, .h = GAME_HEIGHT };
+    SDL_RenderDrawLine(ren, 0, HUD_SPACE, GAME_WIDTH, HUD_SPACE);
+	rect = (SDL_Rect){ .x = 0, .y = 0, .w = GAME_WIDTH, .h = GAME_HEIGHT };
 	SDL_RenderDrawRect(ren, &rect);
 		
 	return state;
@@ -415,9 +455,18 @@ void setup()
 							 SDL_RENDERER_PRESENTVSYNC);
 	
 	if (!ren) {
-		SDL_DestroyWindow(win);
-		SDL_Quit();
+		cleanup();
 		die("SDL_CreateRenderer: %s\n", SDL_GetError());
+	}
+
+	if (TTF_Init()) {
+		cleanup();
+		die("TTF_Init(): %s\n");
+	}
+
+	if (!(hudfont = TTF_OpenFont("PressStart2P.ttf", 12))) {
+		cleanup();
+		die("TTF_OpenFont()\n");
 	}
 	
 	paddle = ecalloc(1, sizeof(Sprite));
@@ -457,6 +506,7 @@ void cleanup()
 	dbprintf(DEBUG_GAME, "cleanup()\n");
 	SDL_DestroyRenderer(ren);
 	SDL_DestroyWindow(win);
+    TTF_Quit();
 	SDL_Quit();
 
 	// Free up allocated memory like a good kid	
