@@ -47,7 +47,7 @@ const SDL_Color hud_color = { 0xff, 0xff, 0xff, 0xff };
 static const SDL_Rect game_area =
 	{ .x = BORDER_SIZE, .y = HUD_SPACE + BORDER_SIZE,
 	  .w = GAME_WIDTH - BORDER_SIZE*2,
-	  .h = GAME_HEIGHT - HUD_SPACE - BORDER_SIZE };
+	  .h = GAME_HEIGHT - HUD_SPACE - BORDER_SIZE*2 };
 
 // Each Layer[] is a level. Each Layer of bricks contains
 //  its color and the speed it makes the ball go.
