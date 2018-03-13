@@ -91,6 +91,8 @@ Brick *breakbrick(Brick *brick)
 	Brick *temp = NULL;
     double points = brick->layer->speed;
 	double speed = brick->layer->speed;
+    for (int i = 0; i < level/LEN(levels); i++)
+        speed *= PRESTIGE_FACT;
 	
 	if (brick == brickstack) {
 		brickstack = brickstack->next;
@@ -377,7 +379,7 @@ int tick(double dt, int state)
 		transitiontime -= dt;
 		if (transitiontime <= 0) {
 			setuplevel(++level);
-			if (level % 5 == 0)
+			if (level % LEVELS_PER_LIFE == 0)
 				++lives;
 			return 0;
 		}

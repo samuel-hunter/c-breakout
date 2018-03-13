@@ -20,6 +20,12 @@ const SDL_Color hud_color = { 0xff, 0xff, 0xff, 0xff };
 #define BRICK_HGAP       5
 #define BRICK_Y_OFFSET  ((BRICK_HEIGHT + BRICK_HGAP)*3)
 
+// Factor at which bricks go faster in repeated levels
+#define PRESTIGE_FACT 1.5
+
+// Number of levels per free life
+#define LEVELS_PER_LIFE 5
+
 #define PADDLE_WIDTH 100
 #define PADDLE_HEIGHT 20
 #define PADDLE_SPEED 300
