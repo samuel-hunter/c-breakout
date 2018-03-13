@@ -1,3 +1,2 @@
-- Add HUD, displaying level, score, and lives.
 - Fix that quirky collision detection function.
 - Going back on levels makes the speed slightly faster.

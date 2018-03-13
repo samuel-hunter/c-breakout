@@ -5,6 +5,10 @@ learning how to make breakout in JavaScript, so I decided to give this
 a shot. My goal is to make the entire thing in less than 1,000 LOC and
 only rely on SDL2.
 
+## Acknowledgments
+
+- [PressStart2P font by codeman38](http://www.fontspace.com/codeman38/press-start-2p)
+
 ## Directions
 
 `A`,`D` and left/right arrow keys controls the paddle. `Q` quits the game.

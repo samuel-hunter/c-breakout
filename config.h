@@ -8,6 +8,7 @@
 #define BGCOLOR 0, 0, 0
 const Color paddle_color = { .r = 0xee, .g = 0xee, .b = 0xee };
 const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
+const SDL_Color hud_color = { 0xff, 0xff, 0xff, 0xff };
 
 #define GAME_WIDTH  800
 #define GAME_HEIGHT 600
@@ -36,9 +37,11 @@ const Color ball_color   = { .r = 0xff, .g = 0xff, .b = 0xff };
 
 #define STARTING_LIVES 3
 
+#define HUD_SPACE (BALL_SIZE + BORDER_SIZE*2)
 static const SDL_Rect game_area =
-	{ .x = BORDER_SIZE, .y = BORDER_SIZE,
-	  .w = GAME_WIDTH - BORDER_SIZE*2, .h = GAME_HEIGHT - BORDER_SIZE*2 };
+	{ .x = BORDER_SIZE, .y = HUD_SPACE + BORDER_SIZE,
+	  .w = GAME_WIDTH - BORDER_SIZE*2,
+	  .h = GAME_HEIGHT - HUD_SPACE - BORDER_SIZE };
 
 // Each Layer[] is a level. Each Layer of bricks contains
 //  its color and the speed it makes the ball go.
